@@ -409,8 +409,8 @@
             
             <!-- Tabs -->
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('json')">JSON</button>
-                <button class="tab-btn" onclick="switchTab('manual')">Manuel</button>
+                <button class="tab-btn active" onclick="switchTab('json', event)">JSON</button>
+                <button class="tab-btn" onclick="switchTab('manual', event)">Manuel</button>
             </div>
 
             <!-- JSON Tab -->
@@ -473,14 +473,16 @@
             await loadPlatforms();
         });
 
-        function switchTab(tab) {
+        function switchTab(tab, event) {
             currentTab = tab;
             
             // Update tab buttons
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
             
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => {
@@ -498,14 +500,23 @@
             try {
                 const response = await fetch(`${API_URL}/api/platforms`);
                 platforms = await response.json();
+                console.log('Platforms loaded:', platforms);
                 renderPlatforms();
             } catch (error) {
                 console.error('Platform yükleme hatası:', error);
+                const container = document.getElementById('platformsContainer');
+                container.innerHTML = '<div style="color: #f56565; text-align: center; padding: 20px;">❌ Platform yüklenemedi</div>';
             }
         }
 
         function renderPlatforms() {
             const container = document.getElementById('platformsContainer');
+            
+            if (Object.keys(platforms).length === 0) {
+                container.innerHTML = '<div style="color: #718096; text-align: center; padding: 20px;">Platformlar yükleniyor...</div>';
+                return;
+            }
+            
             let html = '';
             
             Object.entries(platforms).forEach(([key, platform]) => {
