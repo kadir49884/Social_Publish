@@ -40,7 +40,12 @@ def allowed_file(filename):
 
 @app.route('/')
 def index():
-    """Ana sayfa"""
+    """Ana sayfa - JSON paylaşım sayfası"""
+    return send_from_directory('public', 'index.html')
+
+@app.route('/admin')
+def admin():
+    """Admin arayüzü - Manuel paylaşım"""
     return render_template('index.html')
 
 
