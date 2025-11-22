@@ -145,8 +145,9 @@ def publish():
                 "error": "Image is required"
             }), 400
         
-        # Rastgele hashtag ekle
-        message_with_tags = add_random_hashtags(message)
+        # Hashtag kontrolü
+        add_hashtags = request.form.get('add_hashtags', 'true').lower() == 'true'
+        message_with_tags = add_random_hashtags(message) if add_hashtags else message
         
         results = {}
         
@@ -247,8 +248,9 @@ def publish_json():
         if konum:
             message += f"\n\n📍 {konum}"
         
-        # Rastgele hashtag ekle
-        message_with_tags = add_random_hashtags(message)
+        # Hashtag kontrolü
+        add_hashtags = data.get('add_hashtags', True)
+        message_with_tags = add_random_hashtags(message) if add_hashtags else message
         
         # Görseli indir
         try:

@@ -437,6 +437,46 @@
             background: #f56565;
         }
 
+        /* Hashtag Toggle */
+        .hashtag-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            background: #f7fafc;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .hashtag-toggle:hover {
+            background: #eef2ff;
+            border-color: #cbd5e0;
+        }
+
+        .hashtag-toggle input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .hashtag-toggle-label {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #4a5568;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .hashtag-toggle-info {
+            font-size: 0.8em;
+            color: #718096;
+            margin-left: auto;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding-top: 8px;
@@ -519,6 +559,13 @@
             <div class="platforms-grid" id="platformsContainer">
                 <!-- Dinamik yüklenecek -->
             </div>
+            
+            <!-- Hashtag Toggle -->
+            <label class="hashtag-toggle">
+                <input type="checkbox" id="hashtagToggle" checked>
+                <span class="hashtag-toggle-label">🏷️ Hashtag Ekle</span>
+                <span class="hashtag-toggle-info">(5 rastgele)</span>
+            </label>
         </div>
 
         <!-- Share Button -->
@@ -658,6 +705,10 @@
                 formData.append('message', title);
                 formData.append('image', uploadedImageFile);
                 formData.append('platforms', JSON.stringify(selectedPlatforms));
+                
+                // Hashtag seçeneğini ekle
+                const addHashtags = document.getElementById('hashtagToggle').checked;
+                formData.append('add_hashtags', addHashtags);
 
                 const response = await fetch(`${API_URL}/api/publish`, {
                     method: 'POST',
@@ -850,6 +901,10 @@
 
                 // Platform bilgisini ekle
                 data.platforms = selectedPlatforms;
+                
+                // Hashtag seçeneğini ekle
+                const addHashtags = document.getElementById('hashtagToggle').checked;
+                data.add_hashtags = addHashtags;
 
                 // Send JSON to API (backend will download image)
                 const response = await fetch(`${API_URL}/api/publish/json`, {
