@@ -477,6 +477,60 @@
             margin-left: auto;
         }
 
+        /* Hashtag Input Area */
+        .hashtag-input-area {
+            margin-top: 12px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .hashtag-input-area.active {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hashtag-textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-size: 0.9em;
+            color: #2d3748;
+            resize: vertical;
+            transition: all 0.2s;
+            background: #f7fafc;
+        }
+
+        .hashtag-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .hashtag-textarea::placeholder {
+            color: #a0aec0;
+        }
+
+        .hashtag-hint {
+            font-size: 0.8em;
+            color: #718096;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding-top: 8px;
@@ -561,11 +615,23 @@
             </div>
             
             <!-- Hashtag Toggle -->
-            <label class="hashtag-toggle">
+            <label class="hashtag-toggle" onclick="toggleHashtagInput(event)">
                 <input type="checkbox" id="hashtagToggle" checked>
                 <span class="hashtag-toggle-label">🏷️ Hashtag Ekle</span>
                 <span class="hashtag-toggle-info">(5 rastgele)</span>
             </label>
+            
+            <!-- Hashtag Input Area -->
+            <div class="hashtag-input-area" id="hashtagInputArea">
+                <textarea 
+                    id="customHashtags" 
+                    class="hashtag-textarea" 
+                    placeholder="#hashtag1 #hashtag2 #hashtag3 (boş bırakırsanız varsayılan hashtag havuzundan seçilir)"
+                ></textarea>
+                <div class="hashtag-hint">
+                    💡 Her hashtag'i # ile başlatın. Boş bırakırsanız otomatik hashtag'ler kullanılır.
+                </div>
+            </div>
         </div>
 
         <!-- Share Button -->
@@ -709,6 +775,14 @@
                 // Hashtag seçeneğini ekle
                 const addHashtags = document.getElementById('hashtagToggle').checked;
                 formData.append('add_hashtags', addHashtags);
+                
+                // Custom hashtag'leri ekle (varsa)
+                if (addHashtags) {
+                    const customHashtags = document.getElementById('customHashtags').value.trim();
+                    if (customHashtags) {
+                        formData.append('custom_hashtags', customHashtags);
+                    }
+                }
 
                 const response = await fetch(`${API_URL}/api/publish`, {
                     method: 'POST',
@@ -805,6 +879,45 @@
             selectedPlatforms = Array.from(checkboxes).map(cb => cb.value);
             console.log('Seçili platformlar:', selectedPlatforms);
         }
+
+        // Hashtag input toggle
+        function toggleHashtagInput(event) {
+            // Checkbox'ın kendisine tıklanırsa, label'ın default davranışı çalışsın
+            if (event.target.type === 'checkbox') {
+                return;
+            }
+            
+            event.preventDefault();
+            const checkbox = document.getElementById('hashtagToggle');
+            const inputArea = document.getElementById('hashtagInputArea');
+            
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                inputArea.classList.add('active');
+            } else {
+                inputArea.classList.remove('active');
+            }
+        }
+
+        // Checkbox change event
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkbox = document.getElementById('hashtagToggle');
+            const inputArea = document.getElementById('hashtagInputArea');
+            
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    inputArea.classList.add('active');
+                } else {
+                    inputArea.classList.remove('active');
+                }
+            });
+            
+            // Varsayılan açık
+            if (checkbox.checked) {
+                inputArea.classList.add('active');
+            }
+        });
 
         async function shareToFacebook() {
             const resultDiv = document.getElementById('result');
@@ -905,6 +1018,14 @@
                 // Hashtag seçeneğini ekle
                 const addHashtags = document.getElementById('hashtagToggle').checked;
                 data.add_hashtags = addHashtags;
+                
+                // Custom hashtag'leri ekle (varsa)
+                if (addHashtags) {
+                    const customHashtags = document.getElementById('customHashtags').value.trim();
+                    if (customHashtags) {
+                        data.custom_hashtags = customHashtags;
+                    }
+                }
 
                 // Send JSON to API (backend will download image)
                 const response = await fetch(`${API_URL}/api/publish/json`, {

@@ -53,9 +53,29 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def add_random_hashtags(message: str, count: int = 5) -> str:
+def parse_custom_hashtags(hashtag_text: str) -> list:
+    """Custom hashtag text'ini parse et ve liste döndür"""
+    import re
+    # # ile başlayan kelimeleri bul
+    hashtags = re.findall(r'#\w+', hashtag_text)
+    return [tag for tag in hashtags if len(tag) > 1]
+
+
+def add_random_hashtags(message: str, count: int = 5, custom_hashtags: str = None) -> str:
     """Mesaja rastgele hashtag ekle"""
-    selected_tags = random.sample(HASHTAGS, min(count, len(HASHTAGS)))
+    if custom_hashtags:
+        # Custom hashtag'leri parse et
+        parsed_tags = parse_custom_hashtags(custom_hashtags)
+        if parsed_tags:
+            # Custom hashtag'lerden rastgele seç
+            selected_tags = random.sample(parsed_tags, min(count, len(parsed_tags)))
+        else:
+            # Parse edilemezse default'a dön
+            selected_tags = random.sample(HASHTAGS, min(count, len(HASHTAGS)))
+    else:
+        # Default hashtag havuzundan seç
+        selected_tags = random.sample(HASHTAGS, min(count, len(HASHTAGS)))
+    
     return f"{message}\n\n{' '.join(selected_tags)}"
 
 
@@ -147,7 +167,8 @@ def publish():
         
         # Hashtag kontrolü
         add_hashtags = request.form.get('add_hashtags', 'true').lower() == 'true'
-        message_with_tags = add_random_hashtags(message) if add_hashtags else message
+        custom_hashtags = request.form.get('custom_hashtags', None)
+        message_with_tags = add_random_hashtags(message, custom_hashtags=custom_hashtags) if add_hashtags else message
         
         results = {}
         
@@ -250,7 +271,8 @@ def publish_json():
         
         # Hashtag kontrolü
         add_hashtags = data.get('add_hashtags', True)
-        message_with_tags = add_random_hashtags(message) if add_hashtags else message
+        custom_hashtags = data.get('custom_hashtags', None)
+        message_with_tags = add_random_hashtags(message, custom_hashtags=custom_hashtags) if add_hashtags else message
         
         # Görseli indir
         try:
