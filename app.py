@@ -82,17 +82,14 @@ def get_platforms():
 @app.route('/api/publish', methods=['POST'])
 def publish():
     """
-    Sosyal medyada paylaşım yap
+    Sosyal medyada paylaşım yap (Manuel dosya upload ile)
     
-    Request Body:
-    {
-        "message": "Paylaşılacak mesaj",
-        "platforms": ["facebook", "twitter"],  // optional, default: all
-        "image": file  // optional
-    }
+    Form Data:
+    - message: str (zorunlu)
+    - image: file (zorunlu)
+    - platforms: JSON array string (opsiyonel)
     """
     try:
-        # Form data al
         message = request.form.get('message')
         
         if not message:
@@ -101,15 +98,21 @@ def publish():
                 "error": "Message is required"
             }), 400
         
-        # Platform seçimi (sadece Facebook)
-        platforms_str = request.form.get('platforms', '')
-        if platforms_str and 'facebook' in platforms_str:
-            platforms = ['facebook']
-        else:
-            platforms = ['facebook']
+        # Platform seçimi
+        platforms_str = request.form.get('platforms', '[]')
+        try:
+            import json
+            selected_platforms = json.loads(platforms_str)
+        except:
+            selected_platforms = ['facebook']
+        
+        if not selected_platforms:
+            selected_platforms = ['facebook']
         
         # Dosya upload
         image_path = None
+        image_url = None
+        
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename and allowed_file(file.filename):
@@ -117,22 +120,38 @@ def publish():
                 image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(image_path)
         
-        # Facebook'ta paylaş
-        result = fb_publisher.publish(
-            message=message,
-            image_path=image_path
-        )
+        if not image_path:
+            return jsonify({
+                "success": False,
+                "error": "Image is required"
+            }), 400
         
-        results = {'facebook': result}
+        results = {}
         
-        # Başarı durumu kontrolü
-        success = any(r.get('status') == 'success' for r in results.values())
+        # Seçili platformlarda paylaş
+        if 'facebook' in selected_platforms:
+            fb_result = fb_publisher.publish(
+                message=message,
+                image_path=image_path
+            )
+            results['facebook'] = fb_result
         
-        response = {
-            "success": success,
-            "message": "Paylaşımlar tamamlandı",
-            "results": results
-        }
+        if 'twitter' in selected_platforms:
+            tw_result = tw_publisher.publish(
+                message=message,
+                image_path=image_path
+            )
+            results['twitter'] = tw_result
+        
+        if 'instagram' in selected_platforms:
+            # Instagram için dosyayı upload edip URL alalım (geçici çözüm)
+            # Production'da S3/Cloudinary gibi servis kullanılmalı
+            ig_result = {
+                "status": "error",
+                "message": "Instagram manuel dosya upload desteklemiyor. Lütfen görsel URL kullanın (JSON modu).",
+                "platform": "instagram"
+            }
+            results['instagram'] = ig_result
         
         # Temp dosyayı sil
         if image_path and os.path.exists(image_path):
@@ -141,7 +160,14 @@ def publish():
             except:
                 pass
         
-        return jsonify(response), 200 if success else 207  # 207 = Multi-Status
+        # Başarı kontrolü
+        success = any(r.get('status') == 'success' for r in results.values())
+        
+        return jsonify({
+            "success": success,
+            "message": "Paylaşımlar tamamlandı",
+            "results": results
+        }), 200 if success else 207
         
     except Exception as e:
         return jsonify({

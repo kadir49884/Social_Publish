@@ -163,6 +163,86 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
+        /* Image Upload Styles */
+        .image-upload-area {
+            position: relative;
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            background: #f7fafc;
+            transition: all 0.2s;
+            overflow: hidden;
+        }
+
+        .image-upload-area:hover {
+            border-color: #667eea;
+            background: #eef2ff;
+        }
+
+        .image-upload-area.dragover {
+            border-color: #667eea;
+            background: #eef2ff;
+            border-style: solid;
+        }
+
+        .upload-placeholder {
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+
+        .upload-text {
+            font-size: 1em;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 4px;
+        }
+
+        .upload-subtext {
+            font-size: 0.85em;
+            color: #718096;
+        }
+
+        .image-preview {
+            position: relative;
+            padding: 12px;
+        }
+
+        .image-preview img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .remove-image {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            font-size: 1.2em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .remove-image:hover {
+            background: rgba(239, 68, 68, 0.9);
+            transform: scale(1.1);
+        }
+
         .btn {
             width: 100%;
             padding: 18px;
@@ -411,16 +491,24 @@
                     <input type="text" id="manualTitle" placeholder="Paylaşım başlığı">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Görsel URL *</label>
-                    <input type="url" id="manualImage" placeholder="https://example.com/image.jpg">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Açıklama</label>
-                    <textarea id="manualDescription" class="manual-textarea" placeholder="Açıklama ekleyin (opsiyonel)"></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Konum</label>
-                    <input type="text" id="manualLocation" placeholder="Konum ekleyin (opsiyonel)">
+                    <label class="form-label">Görsel *</label>
+                    
+                    <!-- Image Upload Area -->
+                    <div class="image-upload-area" id="imageUploadArea">
+                        <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
+                        <div class="upload-placeholder" id="uploadPlaceholder">
+                            <div class="upload-icon">📷</div>
+                            <div class="upload-text">Görseli sürükle-bırak veya tıkla</div>
+                            <div class="upload-subtext">ya da URL yapıştır</div>
+                        </div>
+                        <div class="image-preview" id="imagePreview" style="display: none;">
+                            <img id="previewImg" src="" alt="Preview">
+                            <button class="remove-image" onclick="removeImage()">✕</button>
+                        </div>
+                    </div>
+                    
+                    <!-- URL Input -->
+                    <input type="url" id="manualImageUrl" placeholder="veya görsel URL'si yapıştır" style="margin-top: 12px;">
                 </div>
             </div>
         </div>
@@ -476,6 +564,131 @@
                 document.getElementById('jsonSection').classList.add('active');
             } else {
                 document.getElementById('manualSection').classList.add('active');
+                initImageUpload();
+            }
+        }
+
+        // Image Upload Initialization
+        let uploadedImageFile = null;
+
+        function initImageUpload() {
+            const uploadArea = document.getElementById('imageUploadArea');
+            const fileInput = document.getElementById('imageFileInput');
+            const placeholder = document.getElementById('uploadPlaceholder');
+
+            // Click to upload
+            placeholder.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    handleImageFile(e.target.files[0]);
+                }
+            });
+
+            // Drag & Drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleImageFile(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        function handleImageFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Lütfen bir görsel dosyası seçin!');
+                return;
+            }
+
+            uploadedImageFile = file;
+            
+            // Preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('uploadPlaceholder').style.display = 'none';
+                document.getElementById('imagePreview').style.display = 'block';
+                document.getElementById('manualImageUrl').value = ''; // URL'yi temizle
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            uploadedImageFile = null;
+            document.getElementById('previewImg').src = '';
+            document.getElementById('uploadPlaceholder').style.display = 'block';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('imageFileInput').value = '';
+        }
+
+        // Dosya upload edip paylaş
+        async function uploadImageAndShare(title) {
+            const btn = document.querySelector('.btn');
+            const btnText = document.getElementById('btnText');
+            const btnLoading = document.getElementById('btnLoading');
+
+            try {
+                // Platform kontrolü
+                if (selectedPlatforms.length === 0) {
+                    showError('❌ Lütfen en az bir platform seçin!');
+                    return;
+                }
+
+                // Disable button
+                btn.disabled = true;
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline';
+
+                // FormData ile dosya gönder
+                const formData = new FormData();
+                formData.append('message', title);
+                formData.append('image', uploadedImageFile);
+                formData.append('platforms', JSON.stringify(selectedPlatforms));
+
+                const response = await fetch(`${API_URL}/api/publish`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    let successMsg = '✅ Başarıyla paylaşıldı!\n\n';
+                    Object.entries(result.results || {}).forEach(([platform, res]) => {
+                        if (res.status === 'success') {
+                            successMsg += `${platforms[platform]?.icon || '✓'} ${platforms[platform]?.name || platform}: ✅\n`;
+                        }
+                    });
+                    showSuccess(successMsg);
+                } else {
+                    let errorMsg = '⚠️ Paylaşım sonuçları:\n\n';
+                    Object.entries(result.results || {}).forEach(([platform, res]) => {
+                        const status = res.status === 'success' ? '✅' : '❌';
+                        const msg = res.message || (res.status === 'success' ? 'Başarılı' : 'Hata');
+                        errorMsg += `${platforms[platform]?.icon || '•'} ${platforms[platform]?.name || platform}: ${status} ${msg}\n`;
+                    });
+                    showError(errorMsg);
+                }
+            } catch (error) {
+                showError('❌ Hata: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
             }
         }
 
@@ -582,26 +795,29 @@
             } else {
                 // Manuel input
                 const title = document.getElementById('manualTitle').value.trim();
-                const image = document.getElementById('manualImage').value.trim();
-                const description = document.getElementById('manualDescription').value.trim();
-                const location = document.getElementById('manualLocation').value.trim();
+                const imageUrl = document.getElementById('manualImageUrl').value.trim();
 
                 if (!title) {
                     showError('❌ Başlık zorunludur!');
                     return;
                 }
 
-                if (!image) {
-                    showError('❌ Görsel URL zorunludur!');
+                // Görsel kontrolü: URL veya dosya
+                if (!imageUrl && !uploadedImageFile) {
+                    showError('❌ Görsel (URL veya dosya) zorunludur!');
                     return;
                 }
 
-                // Manuel veriyi JSON formatına çevir
+                // Eğer dosya yüklendiyse, önce upload et
+                if (uploadedImageFile) {
+                    await uploadImageAndShare(title);
+                    return; // uploadImageAndShare kendi işini yapacak
+                }
+
+                // URL varsa direkt kullan
                 data = {
                     baslik: title,
-                    gorsel: image,
-                    aciklama: description,
-                    konum: location
+                    gorsel: imageUrl
                 };
             }
 
