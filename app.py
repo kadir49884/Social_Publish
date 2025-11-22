@@ -234,8 +234,12 @@ if __name__ == '__main__':
     print("=" * 60)
     print("🚀 SocialPublish API Başlatılıyor...")
     print("=" * 60)
-    print(f"📍 URL: http://localhost:5000")
-    print(f"📡 API: http://localhost:5000/api/publish")
+    
+    # Railway için port
+    port = int(os.getenv('PORT', 5000))
+    
+    print(f"📍 Port: {port}")
+    print(f"📡 API: /api/publish")
     print("=" * 60)
     
     # Platform durumunu kontrol et
@@ -245,7 +249,7 @@ if __name__ == '__main__':
     
     app.run(
         host='0.0.0.0',
-        port=5000,
-        debug=os.getenv('FLASK_DEBUG', 'True') == 'True'
+        port=port,
+        debug=os.getenv('FLASK_DEBUG', 'False') == 'True'
     )
 
