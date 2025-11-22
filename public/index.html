@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Paylaşım - JSON Gönder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .preview {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .preview h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .preview img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .preview p {
+            color: #666;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Facebook Paylaşım</h1>
+        <p class="subtitle">JSON yapıştır, Facebook'ta paylaş</p>
+
+        <textarea id="jsonInput" placeholder='{"ilan_turu": "Kayıp", "baslik": "...", "gorsel": "...", ...}'></textarea>
+
+        <button class="btn" onclick="shareToFacebook()">📘 Facebook'ta Paylaş</button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Paylaşılıyor...</p>
+        </div>
+
+        <div class="preview" id="preview"></div>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        // API URL - Backend URL'nizi buraya yazın
+        const API_URL = 'http://localhost:5000';  // Geliştirme
+        // const API_URL = 'https://your-backend-url.com';  // Production
+
+        async function shareToFacebook() {
+            const jsonInput = document.getElementById('jsonInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            const previewDiv = document.getElementById('preview');
+            const loadingDiv = document.getElementById('loading');
+            const btn = document.querySelector('.btn');
+
+            // Reset
+            resultDiv.style.display = 'none';
+            previewDiv.style.display = 'none';
+
+            if (!jsonInput) {
+                showError('Lütfen JSON verisini yapıştırın!');
+                return;
+            }
+
+            try {
+                // Parse JSON
+                const data = JSON.parse(jsonInput);
+
+                // Validate
+                if (!data.baslik || !data.gorsel) {
+                    showError('JSON\'da "baslik" ve "gorsel" alanları zorunludur!');
+                    return;
+                }
+
+                // Show preview
+                showPreview(data);
+
+                // Disable button
+                btn.disabled = true;
+                loadingDiv.style.display = 'block';
+
+                // Prepare form data
+                const formData = new FormData();
+                formData.append('message', data.baslik);
+
+                // Download image and upload
+                const imageBlob = await downloadImage(data.gorsel);
+                formData.append('image', imageBlob, 'image.jpg');
+
+                // Send to API
+                const response = await fetch(`${API_URL}/api/publish/facebook`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('✅ Facebook\'ta başarıyla paylaşıldı!');
+                } else {
+                    showError('❌ Paylaşım hatası: ' + (result.result?.message || result.error));
+                }
+
+            } catch (error) {
+                if (error instanceof SyntaxError) {
+                    showError('❌ Geçersiz JSON formatı! Lütfen kontrol edin.');
+                } else {
+                    showError('❌ Hata: ' + error.message);
+                }
+            } finally {
+                btn.disabled = false;
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function showPreview(data) {
+            const previewDiv = document.getElementById('preview');
+            previewDiv.innerHTML = `
+                <h3>📋 Önizleme</h3>
+                <p><strong>${data.baslik}</strong></p>
+                ${data.aciklama ? `<p style="font-size: 0.9em;">${data.aciklama}</p>` : ''}
+                ${data.konum ? `<p style="font-size: 0.85em;">📍 ${data.konum}</p>` : ''}
+                <img src="${data.gorsel}" alt="Görsel" onerror="this.style.display='none'">
+            `;
+            previewDiv.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result success';
+            resultDiv.textContent = message;
+            resultDiv.style.display = 'block';
+        }
+
+        function showError(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result error';
+            resultDiv.textContent = message;
+            resultDiv.style.display = 'block';
+        }
+
+        async function downloadImage(url) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return blob;
+            } catch (error) {
+                throw new Error('Görsel indirilemedi: ' + error.message);
+            }
+        }
+
+        // CORS hatası için alternatif: Backend'e proxy ekle
+        // Eğer CORS hatası alırsanız, görsel URL'ini backend'e gönderin
+        // Backend indirir ve Facebook'a yükler
+    </script>
+</body>
+</html>
+

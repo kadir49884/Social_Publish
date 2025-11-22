@@ -1,0 +1,16 @@
+# SocialPublish - Cursor AI Kuralları
+
+## Proje Yapısı
+Flask tabanlı Facebook paylaşım sistemi.
+
+## Kod Standartları
+- Clean Code prensipleri
+- PEP 8 Python style guide
+- Type hints kullan (Python 3.8+)
+- Error handling comprehensive olmalı
+
+## Değişiklik Yaparken
+1. Mevcut kodu bozmamaya dikkat et
+2. API endpoint'leri değiştiğinde frontend'i de güncelle
+3. Commit öncesi test et
+
