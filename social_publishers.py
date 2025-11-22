@@ -24,7 +24,7 @@ class FacebookPublisher(SocialMediaPublisher):
         self.page_id = os.getenv('FACEBOOK_PAGE_ID')
     
     def publish(self, message: str, image_path: str = None) -> dict:
-        """Facebook'ta paylaşım yap"""
+        """Facebook'ta paylaşım yap - Graph API v21.0"""
         if not self.access_token or not self.page_id:
             return {
                 "status": "error",
@@ -32,23 +32,26 @@ class FacebookPublisher(SocialMediaPublisher):
             }
         
         try:
+            # Her zaman photo endpoint kullan (görsel varsa caption, yoksa hata)
             if image_path:
                 # Photo post with caption
-                photo_url = f"https://graph.facebook.com/v18.0/{self.page_id}/photos"
+                photo_url = f"https://graph.facebook.com/v21.0/{self.page_id}/photos"
                 params = {
                     "caption": message,
-                    "access_token": self.access_token
+                    "access_token": self.access_token,
+                    "published": "true"
                 }
-                files = {'source': open(image_path, 'rb')}
-                response = requests.post(photo_url, data=params, files=files)
+                with open(image_path, 'rb') as img_file:
+                    files = {'source': img_file}
+                    response = requests.post(photo_url, data=params, files=files)
             else:
-                # Text-only post (use /feed endpoint)
-                feed_url = f"https://graph.facebook.com/v18.0/{self.page_id}/feed"
+                # Text-only post - /feed endpoint
+                feed_url = f"https://graph.facebook.com/v21.0/{self.page_id}/feed"
                 params = {
                     "message": message,
                     "access_token": self.access_token
                 }
-                response = requests.post(feed_url, data=params)
+                response = requests.post(feed_url, params=params)
             
             result = response.json()
             
