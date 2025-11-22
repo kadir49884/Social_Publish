@@ -86,6 +86,9 @@ class TwitterPublisher(SocialMediaPublisher):
         self.access_token = os.getenv('TWITTER_ACCESS_TOKEN')
         self.access_secret = os.getenv('TWITTER_ACCESS_SECRET')
         self.bearer_token = os.getenv('TWITTER_BEARER_TOKEN')
+        
+        # Debug
+        print(f"🔍 Twitter Init: API_KEY={'✅' if self.api_key else '❌'}, ACCESS_TOKEN={'✅' if self.access_token else '❌'}")
     
     def _get_oauth1_session(self):
         """OAuth 1.0a için requests-oauthlib gerekir"""

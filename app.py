@@ -212,16 +212,20 @@ def publish_json():
             
             # Seçili platformlarda paylaş
             if 'facebook' in selected_platforms:
-                results['facebook'] = fb_publisher.publish(
+                fb_result = fb_publisher.publish(
                     message=message,
                     image_path=temp_file.name
                 )
+                results['facebook'] = fb_result
+                print(f"✅ Facebook: {fb_result}")
             
             if 'twitter' in selected_platforms:
-                results['twitter'] = tw_publisher.publish(
+                tw_result = tw_publisher.publish(
                     message=message,
                     image_path=temp_file.name
                 )
+                results['twitter'] = tw_result
+                print(f"🐦 Twitter: {tw_result}")
             
             # Temp dosyayı sil
             try:
