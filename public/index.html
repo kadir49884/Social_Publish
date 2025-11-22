@@ -154,6 +154,108 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Platform Grid - Modern Card Design */
+        .platforms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .platform-card {
+            position: relative;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .platform-card:hover:not(.disabled) {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .platform-card.active {
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.15);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .platform-card.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .platform-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .platform-checkbox:disabled {
+            cursor: not-allowed;
+        }
+
+        .platform-info {
+            flex: 1;
+        }
+
+        .platform-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .platform-name {
+            font-weight: 700;
+            font-size: 1.1em;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .platform-status {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .platform-status.enabled {
+            color: var(--success);
+        }
+
+        .platform-status.disabled {
+            color: var(--error);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.online {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .status-dot.offline {
+            background: var(--error);
+        }
+
+        @media (max-width: 768px) {
+            .platforms-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -164,9 +266,11 @@
         <textarea id="jsonInput" placeholder='{"ilan_turu": "Kayıp", "baslik": "...", "gorsel": "...", ...}'></textarea>
 
         <!-- Platform Selection -->
-        <div class="platforms" id="platformsContainer" style="margin: 20px 0;">
-            <div style="font-weight: 600; margin-bottom: 10px;">📱 Platformlar Seç:</div>
-            <!-- Dinamik yüklenecek -->
+        <div style="margin: 25px 0;">
+            <div style="font-weight: 600; font-size: 1.1em; margin-bottom: 15px; color: #f1f5f9;">📱 Platformlar Seç:</div>
+            <div class="platforms-grid" id="platformsContainer">
+                <!-- Dinamik yüklenecek -->
+            </div>
         </div>
 
         <button class="btn" onclick="shareToFacebook()">🚀 Seçili Platformlarda Paylaş</button>
@@ -204,23 +308,49 @@
 
         function renderPlatforms() {
             const container = document.getElementById('platformsContainer');
-            let html = '<div style="font-weight: 600; margin-bottom: 10px;">📱 Platformlar Seç:</div><div style="display: flex; gap: 15px; flex-wrap: wrap;">';
+            let html = '';
             
             Object.entries(platforms).forEach(([key, platform]) => {
                 const disabled = !platform.enabled;
                 const checked = platform.enabled ? 'checked' : '';
+                const cardClass = platform.enabled ? 'active' : 'disabled';
+                const statusClass = platform.enabled ? 'enabled' : 'disabled';
+                const statusDot = platform.enabled ? 'online' : 'offline';
+                const statusText = platform.enabled ? 'Hazır' : 'Yapılandırılmamış';
                 
                 html += `
-                    <label style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; background: ${disabled ? '#333' : '#2a2a3e'}; border-radius: 8px; cursor: ${disabled ? 'not-allowed' : 'pointer'}; opacity: ${disabled ? '0.5' : '1'};">
-                        <input type="checkbox" value="${key}" ${checked} ${disabled ? 'disabled' : ''} onchange="updateSelectedPlatforms()" style="cursor: ${disabled ? 'not-allowed' : 'pointer'};">
-                        <span>${platform.icon} ${platform.name}</span>
-                    </label>
+                    <div class="platform-card ${cardClass}" onclick="${disabled ? '' : `togglePlatform('${key}')`}">
+                        <input 
+                            type="checkbox" 
+                            class="platform-checkbox"
+                            id="platform_${key}" 
+                            value="${key}" 
+                            ${checked} 
+                            ${disabled ? 'disabled' : ''}
+                            onchange="updateSelectedPlatforms()"
+                        >
+                        <div class="platform-info">
+                            <div class="platform-icon">${platform.icon}</div>
+                            <div class="platform-name">${platform.name}</div>
+                            <div class="platform-status ${statusClass}">
+                                <span class="status-dot ${statusDot}"></span>
+                                ${statusText}
+                            </div>
+                        </div>
+                    </div>
                 `;
             });
             
-            html += '</div>';
             container.innerHTML = html;
             updateSelectedPlatforms();
+        }
+
+        function togglePlatform(key) {
+            const checkbox = document.getElementById(`platform_${key}`);
+            if (checkbox && !checkbox.disabled) {
+                checkbox.checked = !checkbox.checked;
+                updateSelectedPlatforms();
+            }
         }
 
         function updateSelectedPlatforms() {
