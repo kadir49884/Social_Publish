@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 import requests
 import tempfile
-from social_publishers import FacebookPublisher, TwitterPublisher
+from social_publishers import FacebookPublisher, TwitterPublisher, InstagramPublisher
 from werkzeug.utils import secure_filename
 
 # Environment variables yükle
@@ -32,6 +32,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 # Publishers
 fb_publisher = FacebookPublisher()
 tw_publisher = TwitterPublisher()
+ig_publisher = InstagramPublisher()
 
 
 def allowed_file(filename):
@@ -68,6 +69,11 @@ def get_platforms():
             'name': 'Twitter',
             'enabled': bool(os.getenv('TWITTER_API_KEY') and os.getenv('TWITTER_ACCESS_TOKEN')),
             'icon': '𝕏'
+        },
+        'instagram': {
+            'name': 'Instagram',
+            'enabled': bool(os.getenv('INSTAGRAM_ACCESS_TOKEN')),
+            'icon': '📷'
         }
     }
     return jsonify(platforms)
@@ -95,20 +101,12 @@ def publish():
                 "error": "Message is required"
             }), 400
         
-        # Platform seçimi
-        platforms_str = request.form.get('platforms', 'facebook,twitter')
-        selected_platforms = [p.strip() for p in platforms_str.split(',') if p.strip()]
-        
-        # Opsiyonel alanlar (manuel mode için)
-        aciklama = request.form.get('aciklama', '')
-        konum = request.form.get('konum', '')
-        
-        # Mesajı oluştur
-        full_message = message
-        if aciklama:
-            full_message += f"\n\n{aciklama}"
-        if konum:
-            full_message += f"\n\n📍 {konum}"
+        # Platform seçimi (sadece Facebook)
+        platforms_str = request.form.get('platforms', '')
+        if platforms_str and 'facebook' in platforms_str:
+            platforms = ['facebook']
+        else:
+            platforms = ['facebook']
         
         # Dosya upload
         image_path = None
@@ -119,24 +117,13 @@ def publish():
                 image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(image_path)
         
-        results = {}
+        # Facebook'ta paylaş
+        result = fb_publisher.publish(
+            message=message,
+            image_path=image_path
+        )
         
-        # Seçili platformlarda paylaş
-        if 'facebook' in selected_platforms:
-            fb_result = fb_publisher.publish(
-                message=full_message,
-                image_path=image_path
-            )
-            results['facebook'] = fb_result
-            print(f"✅ Facebook: {fb_result}")
-        
-        if 'twitter' in selected_platforms:
-            tw_result = tw_publisher.publish(
-                message=full_message,
-                image_path=image_path
-            )
-            results['twitter'] = tw_result
-            print(f"🐦 Twitter: {tw_result}")
+        results = {'facebook': result}
         
         # Başarı durumu kontrolü
         success = any(r.get('status') == 'success' for r in results.values())
@@ -196,8 +183,8 @@ def publish_json():
                 "error": "baslik ve gorsel alanları zorunludur"
             }), 400
         
-        # Platform seçimi
-        selected_platforms = data.get('platforms', ['facebook', 'twitter'])
+            # Platform seçimi
+        selected_platforms = data.get('platforms', ['facebook', 'twitter', 'instagram'])
         if isinstance(selected_platforms, str):
             selected_platforms = [selected_platforms]
         
@@ -240,6 +227,14 @@ def publish_json():
                 )
                 results['twitter'] = tw_result
                 print(f"🐦 Twitter: {tw_result}")
+            
+            if 'instagram' in selected_platforms:
+                ig_result = ig_publisher.publish(
+                    message=message,
+                    image_path=temp_file.name
+                )
+                results['instagram'] = ig_result
+                print(f"📷 Instagram: {ig_result}")
             
             # Temp dosyayı sil
             try:

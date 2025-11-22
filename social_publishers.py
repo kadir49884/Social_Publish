@@ -1,6 +1,6 @@
 """
 Social Media Publisher Modülü
-Facebook ve Twitter için publisher classes
+Facebook, Twitter ve Instagram için publisher classes
 """
 import os
 import requests
@@ -169,4 +169,86 @@ class TwitterPublisher(SocialMediaPublisher):
                 "status": "error",
                 "message": f"Exception: {str(e)}",
                 "platform": "twitter"
+            }
+
+
+class InstagramPublisher(SocialMediaPublisher):
+    """Instagram posting with Graph API"""
+    
+    def __init__(self):
+        self.access_token = os.getenv('INSTAGRAM_ACCESS_TOKEN')
+        self.instagram_account_id = os.getenv('INSTAGRAM_ACCOUNT_ID')
+    
+    def publish(self, message: str, image_path: str = None) -> dict:
+        """Instagram'da paylaşım yap - Graph API"""
+        if not self.access_token or not self.instagram_account_id:
+            return {
+                "status": "error",
+                "message": "Instagram credentials not configured",
+                "platform": "instagram"
+            }
+        
+        if not image_path:
+            return {
+                "status": "error",
+                "message": "Instagram requires an image",
+                "platform": "instagram"
+            }
+        
+        try:
+            # Step 1: Create media container
+            container_url = f"https://graph.facebook.com/v21.0/{self.instagram_account_id}/media"
+            
+            # Upload image and get URL (using Facebook hosting)
+            with open(image_path, 'rb') as img_file:
+                files = {'source': img_file}
+                upload_response = requests.post(
+                    f"https://graph.facebook.com/v21.0/{self.instagram_account_id}/media",
+                    data={
+                        'caption': message,
+                        'access_token': self.access_token
+                    },
+                    files=files
+                )
+            
+            if upload_response.status_code != 200:
+                return {
+                    "status": "error",
+                    "message": f"Media upload failed: {upload_response.text}",
+                    "platform": "instagram"
+                }
+            
+            container_id = upload_response.json().get('id')
+            
+            # Step 2: Publish the container
+            publish_url = f"https://graph.facebook.com/v21.0/{self.instagram_account_id}/media_publish"
+            publish_response = requests.post(
+                publish_url,
+                data={
+                    'creation_id': container_id,
+                    'access_token': self.access_token
+                }
+            )
+            
+            result = publish_response.json()
+            
+            if publish_response.status_code == 200 and 'id' in result:
+                return {
+                    "status": "success",
+                    "post_id": result.get('id'),
+                    "platform": "instagram"
+                }
+            else:
+                error_msg = result.get('error', {}).get('message', 'Unknown error')
+                return {
+                    "status": "error",
+                    "message": f"Instagram API Error: {error_msg}",
+                    "platform": "instagram"
+                }
+                
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Exception: {str(e)}",
+                "platform": "instagram"
             }
