@@ -164,8 +164,8 @@
 
         .platform-card {
             position: relative;
-            background: var(--bg-secondary);
-            border: 2px solid var(--border);
+            background: #1e293b;
+            border: 2px solid #334155;
             border-radius: 12px;
             padding: 16px;
             cursor: pointer;
@@ -176,20 +176,21 @@
         }
 
         .platform-card:hover:not(.disabled) {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
-            border-color: rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
         }
 
         .platform-card.active {
-            border-color: var(--primary);
-            background: rgba(102, 126, 234, 0.15);
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+            background: #2d3b52;
+            box-shadow: 0 0 12px rgba(102, 126, 234, 0.4);
         }
 
         .platform-card.disabled {
-            opacity: 0.4;
+            opacity: 0.5;
             cursor: not-allowed;
+            background: #1a1f2e;
         }
 
         .platform-checkbox {
