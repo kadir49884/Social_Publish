@@ -1,7 +1,7 @@
 # SocialPublish - Cursor AI Kuralları
 
 ## Proje Yapısı
-Flask tabanlı Facebook paylaşım sistemi.
+Flask tabanlı sosyal medya paylaşım sistemi (Facebook, Twitter, Instagram).
 
 ## Kod Standartları
 - Clean Code prensipleri

@@ -16,7 +16,7 @@ from werkzeug.utils import secure_filename
 load_dotenv()
 
 # Flask app
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__)
 CORS(app)
 
 # Configuration
