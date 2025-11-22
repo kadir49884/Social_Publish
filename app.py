@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import os
 import requests
 import tempfile
+import random
 from social_publishers import FacebookPublisher, TwitterPublisher, InstagramPublisher
 from werkzeug.utils import secure_filename
 
@@ -29,6 +30,18 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
+# Hashtag havuzu
+HASHTAGS = [
+    "#kayıphayvan", "#kayıpköpek", "#kayıpkedi", "#hayvankayıp", 
+    "#sokakhayvanları", "#acilyardım", "#sahiplendir", "#hayvankoruma", 
+    "#hayvansahiplenme", "#yardımçağrısı", "#petyardım", "#hayvansev", 
+    "#hayvansever", "#köpekbulundu", "#kedibulundu", "#hayvanbulundu", 
+    "#sosyalpet", "#petcommunity", "#pawnear", "#hayvansahipsizdeğil", 
+    "#patileripeşinde", "#canlarimiziara", "#petalert", "#kayıpelan", 
+    "#acilduyuru", "#destekol", "#mahallename", "#şehiradı", 
+    "#görenbilenvarmı", "#hayvanlarayardım"
+]
+
 # Publishers
 fb_publisher = FacebookPublisher()
 tw_publisher = TwitterPublisher()
@@ -38,6 +51,12 @@ ig_publisher = InstagramPublisher()
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def add_random_hashtags(message: str, count: int = 5) -> str:
+    """Mesaja rastgele hashtag ekle"""
+    selected_tags = random.sample(HASHTAGS, min(count, len(HASHTAGS)))
+    return f"{message}\n\n{' '.join(selected_tags)}"
 
 
 @app.route('/')
@@ -126,19 +145,22 @@ def publish():
                 "error": "Image is required"
             }), 400
         
+        # Rastgele hashtag ekle
+        message_with_tags = add_random_hashtags(message)
+        
         results = {}
         
         # Seçili platformlarda paylaş
         if 'facebook' in selected_platforms:
             fb_result = fb_publisher.publish(
-                message=message,
+                message=message_with_tags,
                 image_path=image_path
             )
             results['facebook'] = fb_result
         
         if 'twitter' in selected_platforms:
             tw_result = tw_publisher.publish(
-                message=message,
+                message=message_with_tags,
                 image_path=image_path
             )
             results['twitter'] = tw_result
@@ -225,6 +247,9 @@ def publish_json():
         if konum:
             message += f"\n\n📍 {konum}"
         
+        # Rastgele hashtag ekle
+        message_with_tags = add_random_hashtags(message)
+        
         # Görseli indir
         try:
             img_response = requests.get(gorsel_url, timeout=10)
@@ -240,7 +265,7 @@ def publish_json():
             # Seçili platformlarda paylaş
             if 'facebook' in selected_platforms:
                 fb_result = fb_publisher.publish(
-                    message=message,
+                    message=message_with_tags,
                     image_path=temp_file.name
                 )
                 results['facebook'] = fb_result
@@ -248,7 +273,7 @@ def publish_json():
             
             if 'twitter' in selected_platforms:
                 tw_result = tw_publisher.publish(
-                    message=message,
+                    message=message_with_tags,
                     image_path=temp_file.name
                 )
                 results['twitter'] = tw_result
@@ -256,7 +281,7 @@ def publish_json():
             
             if 'instagram' in selected_platforms:
                 ig_result = ig_publisher.publish(
-                    message=message,
+                    message=message_with_tags,
                     image_path=gorsel_url  # Instagram URL istiyor, lokal path değil
                 )
                 results['instagram'] = ig_result
