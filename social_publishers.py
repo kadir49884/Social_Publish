@@ -180,7 +180,7 @@ class InstagramPublisher(SocialMediaPublisher):
         self.instagram_account_id = os.getenv('INSTAGRAM_ACCOUNT_ID')
     
     def publish(self, message: str, image_path: str = None) -> dict:
-        """Instagram'da paylaşım yap - Graph API"""
+        """Instagram'da paylaşım yap - Graph API (URL ile)"""
         if not self.access_token or not self.instagram_account_id:
             return {
                 "status": "error",
@@ -191,58 +191,56 @@ class InstagramPublisher(SocialMediaPublisher):
         if not image_path:
             return {
                 "status": "error",
-                "message": "Instagram requires an image",
+                "message": "Instagram requires an image URL",
                 "platform": "instagram"
             }
         
         try:
-            # Step 1: Create media container
+            # Instagram için image_path aslında URL olmalı
+            image_url = image_path
+            
+            # Step 1: Create media container with image URL
             container_url = f"https://graph.facebook.com/v21.0/{self.instagram_account_id}/media"
+            container_params = {
+                'image_url': image_url,
+                'caption': message,
+                'access_token': self.access_token
+            }
             
-            # Upload image and get URL (using Facebook hosting)
-            with open(image_path, 'rb') as img_file:
-                files = {'source': img_file}
-                upload_response = requests.post(
-                    f"https://graph.facebook.com/v21.0/{self.instagram_account_id}/media",
-                    data={
-                        'caption': message,
-                        'access_token': self.access_token
-                    },
-                    files=files
-                )
+            container_response = requests.post(container_url, data=container_params)
+            container_result = container_response.json()
             
-            if upload_response.status_code != 200:
+            if container_response.status_code != 200 or 'id' not in container_result:
+                error_msg = container_result.get('error', {}).get('message', 'Unknown error')
                 return {
                     "status": "error",
-                    "message": f"Media upload failed: {upload_response.text}",
+                    "message": f"Media container creation failed: {error_msg}",
                     "platform": "instagram"
                 }
             
-            container_id = upload_response.json().get('id')
+            container_id = container_result['id']
             
             # Step 2: Publish the container
             publish_url = f"https://graph.facebook.com/v21.0/{self.instagram_account_id}/media_publish"
-            publish_response = requests.post(
-                publish_url,
-                data={
-                    'creation_id': container_id,
-                    'access_token': self.access_token
-                }
-            )
+            publish_params = {
+                'creation_id': container_id,
+                'access_token': self.access_token
+            }
             
-            result = publish_response.json()
+            publish_response = requests.post(publish_url, data=publish_params)
+            publish_result = publish_response.json()
             
-            if publish_response.status_code == 200 and 'id' in result:
+            if publish_response.status_code == 200 and 'id' in publish_result:
                 return {
                     "status": "success",
-                    "post_id": result.get('id'),
+                    "post_id": publish_result['id'],
                     "platform": "instagram"
                 }
             else:
-                error_msg = result.get('error', {}).get('message', 'Unknown error')
+                error_msg = publish_result.get('error', {}).get('message', 'Unknown error')
                 return {
                     "status": "error",
-                    "message": f"Instagram API Error: {error_msg}",
+                    "message": f"Instagram publish error: {error_msg}",
                     "platform": "instagram"
                 }
                 

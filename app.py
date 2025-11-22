@@ -231,7 +231,7 @@ def publish_json():
             if 'instagram' in selected_platforms:
                 ig_result = ig_publisher.publish(
                     message=message,
-                    image_path=temp_file.name
+                    image_path=gorsel_url  # Instagram URL istiyor, lokal path değil
                 )
                 results['instagram'] = ig_result
                 print(f"📷 Instagram: {ig_result}")
