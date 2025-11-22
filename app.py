@@ -2,7 +2,7 @@
 SocialPublish - Flask Backend API
 Sosyal medya paylaşım sistemi
 """
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -15,7 +15,7 @@ from werkzeug.utils import secure_filename
 load_dotenv()
 
 # Flask app
-app = Flask(__name__, static_folder='static', template_folder='templates')
+app = Flask(__name__, static_folder='static')
 CORS(app)
 
 # Configuration
@@ -43,11 +43,6 @@ def allowed_file(filename):
 def index():
     """Ana sayfa - JSON paylaşım sayfası"""
     return send_from_directory('public', 'index.html')
-
-@app.route('/admin')
-def admin():
-    """Admin arayüzü - Manuel paylaşım"""
-    return render_template('index.html')
 
 
 @app.route('/api/health', methods=['GET'])
