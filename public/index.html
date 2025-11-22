@@ -197,11 +197,31 @@
 
             try {
                 // Parse JSON
-                const data = JSON.parse(jsonInput);
+                let data;
+                try {
+                    data = JSON.parse(jsonInput);
+                } catch (e) {
+                    showError('❌ Geçersiz JSON formatı! Lütfen kontrol edin.');
+                    return;
+                }
+
+                // Array ise ilk elemanı al
+                if (Array.isArray(data)) {
+                    if (data.length === 0) {
+                        showError('❌ JSON array boş!');
+                        return;
+                    }
+                    data = data[0];
+                }
 
                 // Validate
-                if (!data.baslik || !data.gorsel) {
-                    showError('JSON\'da "baslik" ve "gorsel" alanları zorunludur!');
+                if (!data.baslik) {
+                    showError('❌ JSON\'da "baslik" alanı zorunludur!');
+                    return;
+                }
+
+                if (!data.gorsel) {
+                    showError('❌ JSON\'da "gorsel" alanı zorunludur!');
                     return;
                 }
 
@@ -212,18 +232,13 @@
                 btn.disabled = true;
                 loadingDiv.style.display = 'block';
 
-                // Prepare form data
-                const formData = new FormData();
-                formData.append('message', data.baslik);
-
-                // Download image and upload
-                const imageBlob = await downloadImage(data.gorsel);
-                formData.append('image', imageBlob, 'image.jpg');
-
-                // Send to API
-                const response = await fetch(`${API_URL}/api/publish/facebook`, {
+                // Send JSON to API (backend will download image)
+                const response = await fetch(`${API_URL}/api/publish/json`, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
                 });
 
                 const result = await response.json();
@@ -235,11 +250,7 @@
                 }
 
             } catch (error) {
-                if (error instanceof SyntaxError) {
-                    showError('❌ Geçersiz JSON formatı! Lütfen kontrol edin.');
-                } else {
-                    showError('❌ Hata: ' + error.message);
-                }
+                showError('❌ Hata: ' + error.message);
             } finally {
                 btn.disabled = false;
                 loadingDiv.style.display = 'none';
@@ -271,20 +282,6 @@
             resultDiv.textContent = message;
             resultDiv.style.display = 'block';
         }
-
-        async function downloadImage(url) {
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                return blob;
-            } catch (error) {
-                throw new Error('Görsel indirilemedi: ' + error.message);
-            }
-        }
-
-        // CORS hatası için alternatif: Backend'e proxy ekle
-        // Eğer CORS hatası alırsanız, görsel URL'ini backend'e gönderin
-        // Backend indirir ve Facebook'a yükler
     </script>
 </body>
 </html>

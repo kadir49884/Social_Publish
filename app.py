@@ -6,6 +6,8 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
+import requests
+import tempfile
 from social_publishers import FacebookPublisher
 from werkzeug.utils import secure_filename
 
@@ -136,6 +138,89 @@ def publish():
         }), 500
 
 
+@app.route('/api/publish/json', methods=['POST'])
+def publish_json():
+    """
+    JSON formatında veri al, başlık + görsel Facebook'ta paylaş
+    
+    Request Body (JSON):
+    {
+        "baslik": "Paylaşım başlığı",
+        "gorsel": "https://example.com/image.jpg",
+        "aciklama": "Opsiyonel açıklama",
+        "konum": "Opsiyonel konum"
+    }
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "JSON data is required"
+            }), 400
+        
+        # Zorunlu alanlar
+        baslik = data.get('baslik')
+        gorsel_url = data.get('gorsel')
+        
+        if not baslik or not gorsel_url:
+            return jsonify({
+                "success": False,
+                "error": "baslik ve gorsel alanları zorunludur"
+            }), 400
+        
+        # Opsiyonel alanlar
+        aciklama = data.get('aciklama', '')
+        konum = data.get('konum', '')
+        
+        # Mesajı oluştur
+        message = baslik
+        if aciklama:
+            message += f"\n\n{aciklama}"
+        if konum:
+            message += f"\n\n📍 {konum}"
+        
+        # Görseli indir
+        try:
+            img_response = requests.get(gorsel_url, timeout=10)
+            img_response.raise_for_status()
+            
+            # Geçici dosya oluştur
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+            temp_file.write(img_response.content)
+            temp_file.close()
+            
+            # Facebook'ta paylaş
+            result = fb_publisher.publish(
+                message=message,
+                image_path=temp_file.name
+            )
+            
+            # Temp dosyayı sil
+            try:
+                os.remove(temp_file.name)
+            except:
+                pass
+            
+            success = result.get('status') == 'success'
+            
+            return jsonify({
+                "success": success,
+                "result": result
+            }), 200 if success else 400
+            
+        except requests.exceptions.RequestException as e:
+            return jsonify({
+                "success": False,
+                "error": f"Görsel indirilemedi: {str(e)}"
+            }), 400
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
 # Static files
