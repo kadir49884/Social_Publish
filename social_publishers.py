@@ -1,6 +1,6 @@
 """
-Facebook Paylaşım Modülü
-Sadece Facebook için publisher class
+Social Media Publisher Modülü
+Facebook ve Twitter için publisher classes
 """
 import os
 import requests
@@ -74,4 +74,96 @@ class FacebookPublisher(SocialMediaPublisher):
                 "status": "error",
                 "message": f"Exception: {str(e)}",
                 "platform": "facebook"
+            }
+
+
+class TwitterPublisher(SocialMediaPublisher):
+    """Twitter posting with API v2"""
+    
+    def __init__(self):
+        self.api_key = os.getenv('TWITTER_API_KEY')
+        self.api_secret = os.getenv('TWITTER_API_SECRET')
+        self.access_token = os.getenv('TWITTER_ACCESS_TOKEN')
+        self.access_secret = os.getenv('TWITTER_ACCESS_SECRET')
+        self.bearer_token = os.getenv('TWITTER_BEARER_TOKEN')
+    
+    def _get_oauth1_session(self):
+        """OAuth 1.0a için requests-oauthlib gerekir"""
+        try:
+            from requests_oauthlib import OAuth1Session
+            return OAuth1Session(
+                self.api_key,
+                client_secret=self.api_secret,
+                resource_owner_key=self.access_token,
+                resource_owner_secret=self.access_secret
+            )
+        except ImportError:
+            return None
+    
+    def publish(self, message: str, image_path: str = None) -> dict:
+        """Twitter'da paylaşım yap - API v2"""
+        if not all([self.api_key, self.api_secret, self.access_token, self.access_secret]):
+            return {
+                "status": "error",
+                "message": "Twitter credentials not configured",
+                "platform": "twitter"
+            }
+        
+        try:
+            oauth = self._get_oauth1_session()
+            if not oauth:
+                return {
+                    "status": "error",
+                    "message": "requests-oauthlib not installed",
+                    "platform": "twitter"
+                }
+            
+            media_id = None
+            
+            # Görsel varsa yükle
+            if image_path:
+                # Media upload
+                upload_url = "https://upload.twitter.com/1.1/media/upload.json"
+                with open(image_path, 'rb') as img_file:
+                    files = {'media': img_file}
+                    upload_response = oauth.post(upload_url, files=files)
+                
+                if upload_response.status_code == 200:
+                    media_id = upload_response.json().get('media_id_string')
+                else:
+                    return {
+                        "status": "error",
+                        "message": f"Media upload failed: {upload_response.text}",
+                        "platform": "twitter"
+                    }
+            
+            # Tweet gönder (API v2)
+            tweet_url = "https://api.twitter.com/2/tweets"
+            payload = {"text": message}
+            
+            if media_id:
+                payload["media"] = {"media_ids": [media_id]}
+            
+            response = oauth.post(tweet_url, json=payload)
+            result = response.json()
+            
+            if response.status_code == 201:
+                return {
+                    "status": "success",
+                    "post_id": result.get('data', {}).get('id'),
+                    "platform": "twitter"
+                }
+            else:
+                error_msg = result.get('detail', result.get('errors', 'Unknown error'))
+                return {
+                    "status": "error",
+                    "message": f"Twitter API Error: {error_msg}",
+                    "platform": "twitter"
+                }
+                
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Exception: {str(e)}",
+                "platform": "twitter"
             }

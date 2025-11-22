@@ -163,7 +163,13 @@
 
         <textarea id="jsonInput" placeholder='{"ilan_turu": "Kayıp", "baslik": "...", "gorsel": "...", ...}'></textarea>
 
-        <button class="btn" onclick="shareToFacebook()">📘 Facebook'ta Paylaş</button>
+        <!-- Platform Selection -->
+        <div class="platforms" id="platformsContainer" style="margin: 20px 0;">
+            <div style="font-weight: 600; margin-bottom: 10px;">📱 Platformlar Seç:</div>
+            <!-- Dinamik yüklenecek -->
+        </div>
+
+        <button class="btn" onclick="shareToFacebook()">🚀 Seçili Platformlarda Paylaş</button>
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
@@ -177,6 +183,51 @@
     <script>
         // API URL - Aynı domain kullan
         const API_URL = window.location.origin;  // Railway'de otomatik
+        
+        let platforms = {};
+        let selectedPlatforms = [];
+
+        // Sayfa yüklendiğinde platformları al
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadPlatforms();
+        });
+
+        async function loadPlatforms() {
+            try {
+                const response = await fetch(`${API_URL}/api/platforms`);
+                platforms = await response.json();
+                renderPlatforms();
+            } catch (error) {
+                console.error('Platform yükleme hatası:', error);
+            }
+        }
+
+        function renderPlatforms() {
+            const container = document.getElementById('platformsContainer');
+            let html = '<div style="font-weight: 600; margin-bottom: 10px;">📱 Platformlar Seç:</div><div style="display: flex; gap: 15px; flex-wrap: wrap;">';
+            
+            Object.entries(platforms).forEach(([key, platform]) => {
+                const disabled = !platform.enabled;
+                const checked = platform.enabled ? 'checked' : '';
+                
+                html += `
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; background: ${disabled ? '#333' : '#2a2a3e'}; border-radius: 8px; cursor: ${disabled ? 'not-allowed' : 'pointer'}; opacity: ${disabled ? '0.5' : '1'};">
+                        <input type="checkbox" value="${key}" ${checked} ${disabled ? 'disabled' : ''} onchange="updateSelectedPlatforms()" style="cursor: ${disabled ? 'not-allowed' : 'pointer'};">
+                        <span>${platform.icon} ${platform.name}</span>
+                    </label>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+            updateSelectedPlatforms();
+        }
+
+        function updateSelectedPlatforms() {
+            const checkboxes = document.querySelectorAll('#platformsContainer input[type="checkbox"]:checked');
+            selectedPlatforms = Array.from(checkboxes).map(cb => cb.value);
+            console.log('Seçili platformlar:', selectedPlatforms);
+        }
 
         async function shareToFacebook() {
             const jsonInput = document.getElementById('jsonInput').value.trim();
@@ -224,12 +275,21 @@
                     return;
                 }
 
+                // Platform kontrolü
+                if (selectedPlatforms.length === 0) {
+                    showError('❌ Lütfen en az bir platform seçin!');
+                    return;
+                }
+
                 // Show preview
                 showPreview(data);
 
                 // Disable button
                 btn.disabled = true;
                 loadingDiv.style.display = 'block';
+
+                // Platform bilgisini ekle
+                data.platforms = selectedPlatforms;
 
                 // Send JSON to API (backend will download image)
                 const response = await fetch(`${API_URL}/api/publish/json`, {
@@ -243,9 +303,21 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    showSuccess('✅ Facebook\'ta başarıyla paylaşıldı!');
+                    let successMsg = '✅ Başarıyla paylaşıldı!\n\n';
+                    Object.entries(result.results || {}).forEach(([platform, res]) => {
+                        if (res.status === 'success') {
+                            successMsg += `${platforms[platform]?.icon || '✓'} ${platforms[platform]?.name || platform}: ✅\n`;
+                        }
+                    });
+                    showSuccess(successMsg);
                 } else {
-                    showError('❌ Paylaşım hatası: ' + (result.result?.message || result.error));
+                    let errorMsg = '⚠️ Paylaşım sonuçları:\n\n';
+                    Object.entries(result.results || {}).forEach(([platform, res]) => {
+                        const status = res.status === 'success' ? '✅' : '❌';
+                        const msg = res.message || (res.status === 'success' ? 'Başarılı' : 'Hata');
+                        errorMsg += `${platforms[platform]?.icon || '•'} ${platforms[platform]?.name || platform}: ${status} ${msg}\n`;
+                    });
+                    showError(errorMsg);
                 }
 
             } catch (error) {

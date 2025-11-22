@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 import requests
 import tempfile
-from social_publishers import FacebookPublisher
+from social_publishers import FacebookPublisher, TwitterPublisher
 from werkzeug.utils import secure_filename
 
 # Environment variables yükle
@@ -29,8 +29,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
-# Facebook Publisher
+# Publishers
 fb_publisher = FacebookPublisher()
+tw_publisher = TwitterPublisher()
 
 
 def allowed_file(filename):
@@ -67,6 +68,11 @@ def get_platforms():
             'name': 'Facebook',
             'enabled': bool(os.getenv('FACEBOOK_ACCESS_TOKEN')),
             'icon': '📘'
+        },
+        'twitter': {
+            'name': 'Twitter',
+            'enabled': bool(os.getenv('TWITTER_API_KEY') and os.getenv('TWITTER_ACCESS_TOKEN')),
+            'icon': '𝕏'
         }
     }
     return jsonify(platforms)
@@ -146,14 +152,15 @@ def publish():
 @app.route('/api/publish/json', methods=['POST'])
 def publish_json():
     """
-    JSON formatında veri al, başlık + görsel Facebook'ta paylaş
+    JSON formatında veri al, seçili platformlarda paylaş
     
     Request Body (JSON):
     {
         "baslik": "Paylaşım başlığı",
         "gorsel": "https://example.com/image.jpg",
         "aciklama": "Opsiyonel açıklama",
-        "konum": "Opsiyonel konum"
+        "konum": "Opsiyonel konum",
+        "platforms": ["facebook", "twitter"]  // optional
     }
     """
     try:
@@ -174,6 +181,11 @@ def publish_json():
                 "success": False,
                 "error": "baslik ve gorsel alanları zorunludur"
             }), 400
+        
+        # Platform seçimi
+        selected_platforms = data.get('platforms', ['facebook', 'twitter'])
+        if isinstance(selected_platforms, str):
+            selected_platforms = [selected_platforms]
         
         # Opsiyonel alanlar
         aciklama = data.get('aciklama', '')
@@ -196,11 +208,20 @@ def publish_json():
             temp_file.write(img_response.content)
             temp_file.close()
             
-            # Facebook'ta paylaş
-            result = fb_publisher.publish(
-                message=message,
-                image_path=temp_file.name
-            )
+            results = {}
+            
+            # Seçili platformlarda paylaş
+            if 'facebook' in selected_platforms:
+                results['facebook'] = fb_publisher.publish(
+                    message=message,
+                    image_path=temp_file.name
+                )
+            
+            if 'twitter' in selected_platforms:
+                results['twitter'] = tw_publisher.publish(
+                    message=message,
+                    image_path=temp_file.name
+                )
             
             # Temp dosyayı sil
             try:
@@ -208,11 +229,12 @@ def publish_json():
             except:
                 pass
             
-            success = result.get('status') == 'success'
+            # Başarı kontrolü
+            success = any(r.get('status') == 'success' for r in results.values())
             
             return jsonify({
                 "success": success,
-                "result": result
+                "results": results
             }), 200 if success else 400
             
         except requests.exceptions.RequestException as e:
