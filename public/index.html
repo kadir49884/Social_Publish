@@ -63,6 +63,43 @@
             margin-bottom: 16px;
         }
 
+        /* Input Mode Toggle */
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            background: #f7fafc;
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #718096;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .input-section {
+            display: none;
+        }
+
+        .input-section.active {
+            display: block;
+        }
+
         textarea {
             width: 100%;
             height: 280px;
@@ -86,6 +123,44 @@
 
         textarea::placeholder {
             color: #a0aec0;
+        }
+
+        /* Manual Input Styles */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="url"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.95em;
+            color: #2d3748;
+            transition: all 0.2s;
+            background: #f7fafc;
+        }
+
+        input[type="text"]:focus,
+        input[type="url"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .manual-textarea {
+            height: 120px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
         .btn {
@@ -314,10 +389,40 @@
             <p class="subtitle">Tek tıkla sosyal medyada paylaş</p>
         </div>
 
-        <!-- JSON Input Card -->
+        <!-- Input Mode Card -->
         <div class="card">
-            <div class="section-title">📝 Paylaşım İçeriği (JSON)</div>
-            <textarea id="jsonInput" placeholder='{"baslik": "...", "gorsel": "https://...", "aciklama": "..."}'></textarea>
+            <div class="section-title">📝 Paylaşım İçeriği</div>
+            
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <button class="mode-btn active" onclick="switchMode('json')">📄 JSON</button>
+                <button class="mode-btn" onclick="switchMode('manual')">✏️ Manuel</button>
+            </div>
+
+            <!-- JSON Input -->
+            <div id="jsonSection" class="input-section active">
+                <textarea id="jsonInput" placeholder='{"baslik": "...", "gorsel": "https://...", "aciklama": "..."}'></textarea>
+            </div>
+
+            <!-- Manual Input -->
+            <div id="manualSection" class="input-section">
+                <div class="form-group">
+                    <label class="form-label">Başlık *</label>
+                    <input type="text" id="manualTitle" placeholder="Paylaşım başlığı">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Görsel URL *</label>
+                    <input type="url" id="manualImage" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Açıklama</label>
+                    <textarea id="manualDescription" class="manual-textarea" placeholder="Açıklama ekleyin (opsiyonel)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Konum</label>
+                    <input type="text" id="manualLocation" placeholder="Konum ekleyin (opsiyonel)">
+                </div>
+            </div>
         </div>
 
         <!-- Platform Selection Card -->
@@ -346,11 +451,33 @@
         
         let platforms = {};
         let selectedPlatforms = [];
+        let currentMode = 'json'; // 'json' or 'manual'
 
         // Sayfa yüklendiğinde platformları al
         document.addEventListener('DOMContentLoaded', async () => {
             await loadPlatforms();
         });
+
+        // Mode değiştirme
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Button state
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Section visibility
+            document.getElementById('jsonSection').classList.remove('active');
+            document.getElementById('manualSection').classList.remove('active');
+            
+            if (mode === 'json') {
+                document.getElementById('jsonSection').classList.add('active');
+            } else {
+                document.getElementById('manualSection').classList.add('active');
+            }
+        }
 
         async function loadPlatforms() {
             try {
@@ -416,7 +543,6 @@
         }
 
         async function shareToFacebook() {
-            const jsonInput = document.getElementById('jsonInput').value.trim();
             const resultDiv = document.getElementById('result');
             const previewDiv = document.getElementById('preview');
             const btn = document.querySelector('.btn');
@@ -427,14 +553,17 @@
             resultDiv.style.display = 'none';
             previewDiv.style.display = 'none';
 
-            if (!jsonInput) {
-                showError('Lütfen JSON verisini yapıştırın!');
-                return;
-            }
+            let data;
 
-            try {
-                // Parse JSON
-                let data;
+            // Mode'a göre veri al
+            if (currentMode === 'json') {
+                const jsonInput = document.getElementById('jsonInput').value.trim();
+                
+                if (!jsonInput) {
+                    showError('Lütfen JSON verisini yapıştırın!');
+                    return;
+                }
+
                 try {
                     data = JSON.parse(jsonInput);
                 } catch (e) {
@@ -450,23 +579,50 @@
                     }
                     data = data[0];
                 }
+            } else {
+                // Manuel input
+                const title = document.getElementById('manualTitle').value.trim();
+                const image = document.getElementById('manualImage').value.trim();
+                const description = document.getElementById('manualDescription').value.trim();
+                const location = document.getElementById('manualLocation').value.trim();
 
-                // Validate
-                if (!data.baslik) {
-                    showError('❌ JSON\'da "baslik" alanı zorunludur!');
+                if (!title) {
+                    showError('❌ Başlık zorunludur!');
                     return;
                 }
 
-                if (!data.gorsel) {
-                    showError('❌ JSON\'da "gorsel" alanı zorunludur!');
+                if (!image) {
+                    showError('❌ Görsel URL zorunludur!');
                     return;
                 }
 
-                // Platform kontrolü
-                if (selectedPlatforms.length === 0) {
-                    showError('❌ Lütfen en az bir platform seçin!');
-                    return;
-                }
+                // Manuel veriyi JSON formatına çevir
+                data = {
+                    baslik: title,
+                    gorsel: image,
+                    aciklama: description,
+                    konum: location
+                };
+            }
+
+            // Validate
+            if (!data.baslik) {
+                showError('❌ "baslik" alanı zorunludur!');
+                return;
+            }
+
+            if (!data.gorsel) {
+                showError('❌ "gorsel" alanı zorunludur!');
+                return;
+            }
+
+            // Platform kontrolü
+            if (selectedPlatforms.length === 0) {
+                showError('❌ Lütfen en az bir platform seçin!');
+                return;
+            }
+
+            try {
 
                 // Show preview
                 showPreview(data);
