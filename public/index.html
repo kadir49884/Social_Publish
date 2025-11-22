@@ -158,21 +158,21 @@
         /* Platform Grid - Modern Card Design */
         .platforms-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
         }
 
         .platform-card {
             position: relative;
             background: var(--bg-secondary);
             border: 2px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
 
         .platform-card:hover:not(.disabled) {
@@ -193,10 +193,11 @@
         }
 
         .platform-checkbox {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             cursor: pointer;
             accent-color: var(--primary);
+            flex-shrink: 0;
         }
 
         .platform-checkbox:disabled {
@@ -205,22 +206,24 @@
 
         .platform-info {
             flex: 1;
+            min-width: 0;
         }
 
         .platform-icon {
-            font-size: 2em;
-            margin-bottom: 5px;
+            font-size: 1.8em;
+            line-height: 1;
+            margin-bottom: 4px;
         }
 
         .platform-name {
-            font-weight: 700;
-            font-size: 1.1em;
+            font-weight: 600;
+            font-size: 1em;
             color: var(--text-primary);
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .platform-status {
-            font-size: 0.85em;
+            font-size: 0.8em;
             color: var(--text-secondary);
             display: flex;
             align-items: center;
@@ -236,15 +239,16 @@
         }
 
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             display: inline-block;
+            flex-shrink: 0;
         }
 
         .status-dot.online {
             background: var(--success);
-            box-shadow: 0 0 8px var(--success);
+            box-shadow: 0 0 6px var(--success);
         }
 
         .status-dot.offline {
