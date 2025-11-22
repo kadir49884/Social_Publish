@@ -63,95 +63,6 @@
             margin-bottom: 16px;
         }
 
-        /* Tab Navigation */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .tab-btn {
-            padding: 10px 20px;
-            background: none;
-            border: none;
-            border-bottom: 2px solid transparent;
-            color: #718096;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: -2px;
-        }
-
-        .tab-btn:hover {
-            color: #667eea;
-        }
-
-        .tab-btn.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Manual Input */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.9em;
-            font-weight: 500;
-            color: #4a5568;
-            margin-bottom: 8px;
-        }
-
-        input[type="text"],
-        input[type="file"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 0.95em;
-            color: #2d3748;
-            transition: all 0.2s;
-            background: #f7fafc;
-        }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        input[type="file"] {
-            padding: 10px;
-            cursor: pointer;
-        }
-
-        input[type="file"]::file-selector-button {
-            padding: 8px 16px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            margin-right: 12px;
-        }
-
-        input[type="file"]::file-selector-button:hover {
-            background: #5a67d8;
-        }
-
         textarea {
             width: 100%;
             height: 280px;
@@ -403,40 +314,10 @@
             <p class="subtitle">Tek tıkla sosyal medyada paylaş</p>
         </div>
 
-        <!-- Input Card with Tabs -->
+        <!-- JSON Input Card -->
         <div class="card">
-            <div class="section-title">📝 Paylaşım İçeriği</div>
-            
-            <!-- Tabs -->
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="json">JSON</button>
-                <button class="tab-btn" data-tab="manual">Manuel</button>
-            </div>
-
-            <!-- JSON Tab -->
-            <div id="jsonTab" class="tab-content active">
-                <textarea id="jsonInput" placeholder='{"baslik": "...", "gorsel": "https://...", "aciklama": "..."}'></textarea>
-            </div>
-
-            <!-- Manual Tab -->
-            <div id="manualTab" class="tab-content">
-                <div class="form-group">
-                    <label for="manualTitle">Başlık *</label>
-                    <input type="text" id="manualTitle" placeholder="Paylaşım başlığı...">
-                </div>
-                <div class="form-group">
-                    <label for="manualDescription">Açıklama</label>
-                    <input type="text" id="manualDescription" placeholder="Açıklama metni (opsiyonel)">
-                </div>
-                <div class="form-group">
-                    <label for="manualLocation">Konum</label>
-                    <input type="text" id="manualLocation" placeholder="Konum (opsiyonel)">
-                </div>
-                <div class="form-group">
-                    <label for="manualImage">Görsel</label>
-                    <input type="file" id="manualImage" accept="image/*">
-                </div>
-            </div>
+            <div class="section-title">📝 Paylaşım İçeriği (JSON)</div>
+            <textarea id="jsonInput" placeholder='{"baslik": "...", "gorsel": "https://...", "aciklama": "..."}'></textarea>
         </div>
 
         <!-- Platform Selection Card -->
@@ -466,66 +347,23 @@
         let platforms = {};
         let selectedPlatforms = [];
 
-        let currentTab = 'json';
-
-        // Sayfa yüklendiğinde platformları al ve event listener'ları ekle
+        // Sayfa yüklendiğinde platformları al
         document.addEventListener('DOMContentLoaded', async () => {
             await loadPlatforms();
-            initializeTabs();
         });
-
-        function initializeTabs() {
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tab = this.getAttribute('data-tab');
-                    switchTab(tab, this);
-                });
-            });
-        }
-
-        function switchTab(tab, button) {
-            currentTab = tab;
-            
-            // Update tab buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            button.classList.add('active');
-            
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            if (tab === 'json') {
-                document.getElementById('jsonTab').classList.add('active');
-            } else {
-                document.getElementById('manualTab').classList.add('active');
-            }
-        }
 
         async function loadPlatforms() {
             try {
                 const response = await fetch(`${API_URL}/api/platforms`);
                 platforms = await response.json();
-                console.log('Platforms loaded:', platforms);
                 renderPlatforms();
             } catch (error) {
                 console.error('Platform yükleme hatası:', error);
-                const container = document.getElementById('platformsContainer');
-                container.innerHTML = '<div style="color: #f56565; text-align: center; padding: 20px;">❌ Platform yüklenemedi</div>';
             }
         }
 
         function renderPlatforms() {
             const container = document.getElementById('platformsContainer');
-            
-            if (Object.keys(platforms).length === 0) {
-                container.innerHTML = '<div style="color: #718096; text-align: center; padding: 20px;">Platformlar yükleniyor...</div>';
-                return;
-            }
-            
             let html = '';
             
             Object.entries(platforms).forEach(([key, platform]) => {
@@ -537,7 +375,7 @@
                 const statusText = platform.enabled ? 'Hazır' : 'Yapılandırılmamış';
                 
                 html += `
-                    <div class="platform-card ${cardClass}" data-platform="${key}" ${disabled ? '' : `style="cursor: pointer;"`}>
+                    <div class="platform-card ${cardClass}" onclick="${disabled ? '' : `togglePlatform('${key}')`}">
                         <input 
                             type="checkbox" 
                             class="platform-checkbox"
@@ -545,6 +383,7 @@
                             value="${key}" 
                             ${checked} 
                             ${disabled ? 'disabled' : ''}
+                            onchange="updateSelectedPlatforms()"
                         >
                         <div class="platform-info">
                             <div class="platform-icon">${platform.icon}</div>
@@ -559,31 +398,10 @@
             });
             
             container.innerHTML = html;
-            
-            // Platform card'lara event listener ekle
-            document.querySelectorAll('.platform-card').forEach(card => {
-                if (!card.classList.contains('disabled')) {
-                    card.addEventListener('click', function(e) {
-                        const key = this.getAttribute('data-platform');
-                        togglePlatform(key, e);
-                    });
-                }
-            });
-            
-            // Checkbox'lara event listener ekle
-            document.querySelectorAll('.platform-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', updateSelectedPlatforms);
-            });
-            
             updateSelectedPlatforms();
         }
 
-        function togglePlatform(key, event) {
-            // Eğer checkbox'a direkt tıklandıysa, card event'ini ignore et
-            if (event && event.target.type === 'checkbox') {
-                return;
-            }
-            
+        function togglePlatform(key) {
             const checkbox = document.getElementById(`platform_${key}`);
             if (checkbox && !checkbox.disabled) {
                 checkbox.checked = !checkbox.checked;
@@ -598,6 +416,7 @@
         }
 
         async function shareToFacebook() {
+            const jsonInput = document.getElementById('jsonInput').value.trim();
             const resultDiv = document.getElementById('result');
             const previewDiv = document.getElementById('preview');
             const btn = document.querySelector('.btn');
@@ -608,17 +427,14 @@
             resultDiv.style.display = 'none';
             previewDiv.style.display = 'none';
 
-            let data;
+            if (!jsonInput) {
+                showError('Lütfen JSON verisini yapıştırın!');
+                return;
+            }
 
-            // Get data based on current tab
-            if (currentTab === 'json') {
-                const jsonInput = document.getElementById('jsonInput').value.trim();
-                
-                if (!jsonInput) {
-                    showError('Lütfen JSON verisini yapıştırın!');
-                    return;
-                }
-
+            try {
+                // Parse JSON
+                let data;
                 try {
                     data = JSON.parse(jsonInput);
                 } catch (e) {
@@ -645,31 +461,6 @@
                     showError('❌ JSON\'da "gorsel" alanı zorunludur!');
                     return;
                 }
-            } else {
-                // Manual mode
-                const title = document.getElementById('manualTitle').value.trim();
-                const description = document.getElementById('manualDescription').value.trim();
-                const location = document.getElementById('manualLocation').value.trim();
-                const imageFile = document.getElementById('manualImage').files[0];
-
-                if (!title) {
-                    showError('❌ Başlık zorunludur!');
-                    return;
-                }
-
-                if (!imageFile) {
-                    showError('❌ Görsel zorunludur!');
-                    return;
-                }
-
-                // Create FormData for manual upload
-                data = {
-                    baslik: title,
-                    aciklama: description,
-                    konum: location,
-                    imageFile: imageFile
-                };
-            }
 
                 // Platform kontrolü
                 if (selectedPlatforms.length === 0) {
@@ -688,31 +479,14 @@
                 // Platform bilgisini ekle
                 data.platforms = selectedPlatforms;
 
-                let response;
-
-                if (currentTab === 'json') {
-                    // JSON mode - send JSON to API
-                    response = await fetch(`${API_URL}/api/publish/json`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(data)
-                    });
-                } else {
-                    // Manual mode - send FormData
-                    const formData = new FormData();
-                    formData.append('message', data.baslik);
-                    if (data.aciklama) formData.append('aciklama', data.aciklama);
-                    if (data.konum) formData.append('konum', data.konum);
-                    formData.append('image', data.imageFile);
-                    formData.append('platforms', selectedPlatforms.join(','));
-
-                    response = await fetch(`${API_URL}/api/publish`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                }
+                // Send JSON to API (backend will download image)
+                const response = await fetch(`${API_URL}/api/publish/json`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
 
                 const result = await response.json();
 
