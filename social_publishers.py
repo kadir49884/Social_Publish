@@ -85,10 +85,6 @@ class TwitterPublisher(SocialMediaPublisher):
         self.api_secret = os.getenv('TWITTER_API_SECRET')
         self.access_token = os.getenv('TWITTER_ACCESS_TOKEN')
         self.access_secret = os.getenv('TWITTER_ACCESS_SECRET')
-        self.bearer_token = os.getenv('TWITTER_BEARER_TOKEN')
-        
-        # Debug
-        print(f"🔍 Twitter Init: API_KEY={'✅' if self.api_key else '❌'}, ACCESS_TOKEN={'✅' if self.access_token else '❌'}")
     
     def _get_oauth1_session(self):
         """OAuth 1.0a için requests-oauthlib gerekir"""
@@ -149,10 +145,6 @@ class TwitterPublisher(SocialMediaPublisher):
             
             response = oauth.post(tweet_url, json=payload)
             result = response.json()
-            
-            # Debug log
-            print(f"[DEBUG] Twitter API Response: {response.status_code}")
-            print(f"[DEBUG] Response body: {result}")
             
             if response.status_code == 201:
                 return {
