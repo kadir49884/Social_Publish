@@ -150,6 +150,10 @@ class TwitterPublisher(SocialMediaPublisher):
             response = oauth.post(tweet_url, json=payload)
             result = response.json()
             
+            # Debug log
+            print(f"[DEBUG] Twitter API Response: {response.status_code}")
+            print(f"[DEBUG] Response body: {result}")
+            
             if response.status_code == 201:
                 return {
                     "status": "success",

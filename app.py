@@ -79,6 +79,54 @@ def add_random_hashtags(message: str, count: int = 5, custom_hashtags: str = Non
     return f"{message}\n\n{' '.join(selected_tags)}"
 
 
+def prepare_twitter_message(message: str, add_hashtags: bool = True, custom_hashtags: str = None) -> str:
+    """Twitter için 270 karakter limitli mesaj hazırla (güvenli limit)"""
+    TWITTER_LIMIT = 270
+    
+    if add_hashtags:
+        # Hashtag'leri hazırla
+        if custom_hashtags:
+            parsed_tags = parse_custom_hashtags(custom_hashtags)
+            selected_tags = random.sample(parsed_tags, min(5, len(parsed_tags))) if parsed_tags else random.sample(HASHTAGS, 5)
+        else:
+            selected_tags = random.sample(HASHTAGS, 5)
+        
+        hashtag_text = ' '.join(selected_tags)
+        
+        # Mesaj + hashtag'ler 280'i geçiyorsa kısalt
+        full_message = f"{message}\n\n{hashtag_text}"
+        
+        if len(full_message) > TWITTER_LIMIT:
+            # Hashtag'ler için yer ayır (en az 50 karakter)
+            available_for_message = TWITTER_LIMIT - len(hashtag_text) - 5  # 5 = "\n\n" + "..."
+            
+            if available_for_message > 50:
+                # Mesajı kısalt
+                truncated_message = message[:available_for_message] + "..."
+                return f"{truncated_message}\n\n{hashtag_text}"
+            else:
+                # Hashtag'ler çok uzunsa, daha az hashtag kullan
+                while len(selected_tags) > 1 and len(full_message) > TWITTER_LIMIT:
+                    selected_tags.pop()
+                    hashtag_text = ' '.join(selected_tags)
+                    full_message = f"{message}\n\n{hashtag_text}"
+                
+                # Hala uzunsa mesajı kısalt
+                if len(full_message) > TWITTER_LIMIT:
+                    available = TWITTER_LIMIT - len(hashtag_text) - 5
+                    truncated = message[:available] + "..."
+                    return f"{truncated}\n\n{hashtag_text}"
+                
+                return full_message
+        
+        return full_message
+    else:
+        # Hashtag yok, sadece mesaj
+        if len(message) > TWITTER_LIMIT:
+            return message[:TWITTER_LIMIT-3] + "..."
+        return message
+
+
 @app.route('/')
 def index():
     """Ana sayfa - JSON paylaşım sayfası"""
@@ -168,7 +216,12 @@ def publish():
         # Hashtag kontrolü
         add_hashtags = request.form.get('add_hashtags', 'true').lower() == 'true'
         custom_hashtags = request.form.get('custom_hashtags', None)
+        
+        # Facebook ve Instagram için tam mesaj
         message_with_tags = add_random_hashtags(message, custom_hashtags=custom_hashtags) if add_hashtags else message
+        
+        # Twitter için 280 karakter limitli mesaj
+        twitter_message = prepare_twitter_message(message, add_hashtags, custom_hashtags)
         
         results = {}
         
@@ -182,7 +235,7 @@ def publish():
         
         if 'twitter' in selected_platforms:
             tw_result = tw_publisher.publish(
-                message=message_with_tags,
+                message=twitter_message,  # Twitter'a özel 280 karakter limiti
                 image_path=image_path
             )
             results['twitter'] = tw_result
@@ -272,7 +325,12 @@ def publish_json():
         # Hashtag kontrolü
         add_hashtags = data.get('add_hashtags', True)
         custom_hashtags = data.get('custom_hashtags', None)
+        
+        # Facebook ve Instagram için tam mesaj
         message_with_tags = add_random_hashtags(message, custom_hashtags=custom_hashtags) if add_hashtags else message
+        
+        # Twitter için 280 karakter limitli mesaj
+        twitter_message = prepare_twitter_message(message, add_hashtags, custom_hashtags)
         
         # Görseli indir
         try:
@@ -297,7 +355,7 @@ def publish_json():
             
             if 'twitter' in selected_platforms:
                 tw_result = tw_publisher.publish(
-                    message=message_with_tags,
+                    message=twitter_message,  # Twitter'a özel 280 karakter limiti
                     image_path=temp_file.name
                 )
                 results['twitter'] = tw_result
