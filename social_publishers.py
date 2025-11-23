@@ -3,6 +3,7 @@ Social Media Publisher Modülü
 Facebook, Twitter ve Instagram için publisher classes
 """
 import os
+import time
 import requests
 from abc import ABC, abstractmethod
 
@@ -216,7 +217,31 @@ class InstagramPublisher(SocialMediaPublisher):
             
             container_id = container_result['id']
             
-            # Step 2: Publish the container
+            # Step 2: Wait for media to be ready (max 30 seconds)
+            max_attempts = 15
+            for attempt in range(max_attempts):
+                status_url = f"https://graph.facebook.com/v21.0/{container_id}"
+                status_params = {
+                    'fields': 'status_code',
+                    'access_token': self.access_token
+                }
+                status_response = requests.get(status_url, params=status_params)
+                status_result = status_response.json()
+                
+                status_code = status_result.get('status_code')
+                
+                if status_code == 'FINISHED':
+                    break
+                elif status_code == 'ERROR':
+                    return {
+                        "status": "error",
+                        "message": "Instagram media processing failed",
+                        "platform": "instagram"
+                    }
+                
+                time.sleep(2)  # Wait 2 seconds before next check
+            
+            # Step 3: Publish the container
             publish_url = f"https://graph.facebook.com/v21.0/{self.instagram_account_id}/media_publish"
             publish_params = {
                 'creation_id': container_id,
