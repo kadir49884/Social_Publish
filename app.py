@@ -30,16 +30,16 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
-# Hashtag havuzu
+# Hashtag havuzu (Türkçe karakterler normalize edilmiş)
 HASHTAGS = [
-    "#kayıphayvan", "#kayıpköpek", "#kayıpkedi", "#hayvankayıp", 
-    "#sokakhayvanları", "#acilyardım", "#sahiplendir", "#hayvankoruma", 
-    "#hayvansahiplenme", "#yardımçağrısı", "#petyardım", "#hayvansev", 
-    "#hayvansever", "#köpekbulundu", "#kedibulundu", "#hayvanbulundu", 
-    "#sosyalpet", "#petcommunity", "#pawnear", "#hayvansahipsizdeğil", 
-    "#patileripeşinde", "#canlarimiziara", "#petalert", "#kayıpelan", 
-    "#acilduyuru", "#destekol", "#mahallename", "#şehiradı", 
-    "#görenbilenvarmı", "#hayvanlarayardım"
+    "#kayiphayvan", "#kayipkopek", "#kayipkedi", "#hayvankayip", 
+    "#sokakhayvanlari", "#acilyardim", "#sahiplendir", "#hayvankoruma", 
+    "#hayvansahiplenme", "#yardimcagrisi", "#petyardim", "#hayvansev", 
+    "#hayvansever", "#kopekbulundu", "#kedibulundu", "#hayvanbulundu", 
+    "#sosyalpet", "#petcommunity", "#pawnear", "#hayvansahipsizDEGIL", 
+    "#patileripesinde", "#canlarimiziara", "#petalert", "#kayipelan", 
+    "#acilduyuru", "#destekol", "#mahallename", "#sehiradi", 
+    "#gorenbilenvarmi", "#hayvanlarayardim"
 ]
 
 # Publishers
@@ -53,12 +53,29 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def normalize_turkish_chars(text: str) -> str:
+    """Türkçe karakterleri İngilizce karşılıklarına çevir"""
+    turkish_map = {
+        'ç': 'c', 'Ç': 'C',
+        'ğ': 'g', 'Ğ': 'G',
+        'ı': 'i', 'İ': 'I',
+        'ö': 'o', 'Ö': 'O',
+        'ş': 's', 'Ş': 'S',
+        'ü': 'u', 'Ü': 'U'
+    }
+    for tr_char, en_char in turkish_map.items():
+        text = text.replace(tr_char, en_char)
+    return text
+
+
 def parse_custom_hashtags(hashtag_text: str) -> list:
-    """Custom hashtag text'ini parse et ve liste döndür"""
+    """Custom hashtag text'ini parse et ve Türkçe karakterleri normalize et"""
     import re
-    # # ile başlayan kelimeleri bul
-    hashtags = re.findall(r'#\w+', hashtag_text)
-    return [tag for tag in hashtags if len(tag) > 1]
+    # # ile başlayan kelimeleri bul (Türkçe karakterler dahil)
+    hashtags = re.findall(r'#[\wçğıöşüÇĞİÖŞÜ]+', hashtag_text)
+    # Türkçe karakterleri İngilizce'ye çevir
+    normalized = [normalize_turkish_chars(tag) for tag in hashtags if len(tag) > 1]
+    return normalized
 
 
 def add_random_hashtags(message: str, count: int = 5, custom_hashtags: str = None) -> str:
