@@ -9,6 +9,7 @@ import os
 import requests
 import tempfile
 import random
+from datetime import datetime, timedelta
 from social_publishers import FacebookPublisher, TwitterPublisher, InstagramPublisher
 from werkzeug.utils import secure_filename
 
@@ -18,6 +19,10 @@ load_dotenv()
 # Flask app
 app = Flask(__name__)
 CORS(app)
+
+# Rate limiting (5 dakika = 1 paylaşım)
+last_publish_time = None
+RATE_LIMIT_SECONDS = 300  # 5 dakika
 
 # Configuration
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
@@ -306,6 +311,21 @@ def publish_json():
         "platforms": ["facebook", "twitter"]  // optional
     }
     """
+    global last_publish_time
+    
+    # Rate limit kontrolü
+    if last_publish_time:
+        time_since_last = (datetime.now() - last_publish_time).total_seconds()
+        if time_since_last < RATE_LIMIT_SECONDS:
+            remaining = int(RATE_LIMIT_SECONDS - time_since_last)
+            minutes = remaining // 60
+            seconds = remaining % 60
+            return jsonify({
+                "success": False,
+                "error": f"Rate limit aşıldı. {minutes} dakika {seconds} saniye sonra tekrar deneyin.",
+                "retry_after_seconds": remaining
+            }), 429
+    
     try:
         data = request.get_json()
         
@@ -426,6 +446,10 @@ def publish_json():
             
             # Başarı kontrolü
             success = any(r.get('status') == 'success' for r in results.values())
+            
+            # Başarılı paylaşım varsa rate limit timer'ı güncelle
+            if success:
+                last_publish_time = datetime.now()
             
             return jsonify({
                 "success": success,
