@@ -42,10 +42,13 @@ HASHTAGS = [
     "#gorenbilenvarmi", "#hayvanlarayardim"
 ]
 
-# Publishers
+# Publishers (her zaman environment variables'dan okurlar)
 fb_publisher = FacebookPublisher()
 tw_publisher = TwitterPublisher()
 ig_publisher = InstagramPublisher()
+
+# Not: Publishers os.getenv() kullanarak otomatik environment variables okur
+# Token güncelleme sonrası yeniden initialize edilirler
 
 
 def allowed_file(filename):
@@ -166,7 +169,7 @@ def get_platforms():
     platforms = {
         'facebook': {
             'name': 'Facebook',
-            'enabled': bool(os.getenv('FACEBOOK_ACCESS_TOKEN')),
+            'enabled': bool(os.getenv('FACEBOOK_ACCESS_TOKEN') and os.getenv('FACEBOOK_PAGE_ID')),
             'icon': '📘'
         },
         'twitter': {
@@ -176,7 +179,7 @@ def get_platforms():
         },
         'instagram': {
             'name': 'Instagram',
-            'enabled': bool(os.getenv('INSTAGRAM_ACCESS_TOKEN')),
+            'enabled': bool(os.getenv('FACEBOOK_ACCESS_TOKEN') and os.getenv('INSTAGRAM_BUSINESS_ACCOUNT_ID')),
             'icon': '📷'
         }
     }
