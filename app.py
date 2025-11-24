@@ -354,8 +354,13 @@ def publish_json():
             img_response = requests.get(gorsel_url, timeout=10)
             img_response.raise_for_status()
             
-            # Geçici dosya oluştur
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+            # Orijinal dosya uzantısını bul (kalite kaybı olmasın)
+            import mimetypes
+            content_type = img_response.headers.get('Content-Type', 'image/jpeg')
+            extension = mimetypes.guess_extension(content_type) or '.jpg'
+            
+            # Geçici dosya oluştur (orijinal formatta)
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=extension)
             temp_file.write(img_response.content)
             temp_file.close()
             
