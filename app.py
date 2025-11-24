@@ -354,15 +354,40 @@ def publish_json():
             img_response = requests.get(gorsel_url, timeout=10)
             img_response.raise_for_status()
             
-            # Orijinal dosya uzantısını bul (kalite kaybı olmasın)
+            # Orijinal dosya uzantısını bul
             import mimetypes
+            from PIL import Image
+            import io
+            
             content_type = img_response.headers.get('Content-Type', 'image/jpeg')
             extension = mimetypes.guess_extension(content_type) or '.jpg'
             
-            # Geçici dosya oluştur (orijinal formatta)
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=extension)
-            temp_file.write(img_response.content)
-            temp_file.close()
+            # Desteklenmeyen formatları dönüştür (WebP, BMP, TIFF)
+            unsupported_formats = ['.webp', '.bmp', '.tiff', '.tif']
+            needs_conversion = extension.lower() in unsupported_formats and 'instagram' in selected_platforms
+            
+            if needs_conversion:
+                # Instagram için JPEG'e dönüştür
+                img = Image.open(io.BytesIO(img_response.content))
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    # Transparency varsa beyaz background ekle
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # JPEG olarak kaydet (yüksek kalite)
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+                img.save(temp_file.name, 'JPEG', quality=95, optimize=True)
+                temp_file.close()
+            else:
+                # Orijinal formatta kaydet
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=extension)
+                temp_file.write(img_response.content)
+                temp_file.close()
             
             results = {}
             
