@@ -413,6 +413,92 @@ def publish_json():
         }), 500
 
 
+# Token Update Endpoint
+@app.route('/api/update-tokens', methods=['POST'])
+def update_tokens():
+    """Update API tokens dynamically"""
+    try:
+        data = request.json
+        
+        # Validate input
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "Token bilgileri gönderilmedi"
+            }), 400
+        
+        # Update environment variables (in-memory only, not .env file)
+        updated = []
+        
+        if data.get('facebook_access_token'):
+            os.environ['FACEBOOK_ACCESS_TOKEN'] = data['facebook_access_token']
+            updated.append('Facebook Access Token')
+            
+        if data.get('facebook_page_id'):
+            os.environ['FACEBOOK_PAGE_ID'] = data['facebook_page_id']
+            updated.append('Facebook Page ID')
+            
+        if data.get('instagram_business_account_id'):
+            os.environ['INSTAGRAM_BUSINESS_ACCOUNT_ID'] = data['instagram_business_account_id']
+            updated.append('Instagram Account ID')
+            
+        if data.get('twitter_api_key'):
+            os.environ['TWITTER_API_KEY'] = data['twitter_api_key']
+            updated.append('Twitter API Key')
+            
+        if data.get('twitter_api_secret'):
+            os.environ['TWITTER_API_SECRET'] = data['twitter_api_secret']
+            updated.append('Twitter API Secret')
+            
+        if data.get('twitter_access_token'):
+            os.environ['TWITTER_ACCESS_TOKEN'] = data['twitter_access_token']
+            updated.append('Twitter Access Token')
+            
+        if data.get('twitter_access_secret'):
+            os.environ['TWITTER_ACCESS_SECRET'] = data['twitter_access_secret']
+            updated.append('Twitter Access Secret')
+            
+        if data.get('twitter_bearer_token'):
+            os.environ['TWITTER_BEARER_TOKEN'] = data['twitter_bearer_token']
+            updated.append('Twitter Bearer Token')
+        
+        if not updated:
+            return jsonify({
+                "success": False,
+                "error": "Hiçbir token güncellenmedi"
+            }), 400
+        
+        # Reinitialize publishers with new tokens
+        global fb_publisher, tw_publisher, ig_publisher
+        fb_publisher = FacebookPublisher(
+            os.getenv('FACEBOOK_ACCESS_TOKEN'),
+            os.getenv('FACEBOOK_PAGE_ID')
+        )
+        tw_publisher = TwitterPublisher(
+            os.getenv('TWITTER_API_KEY'),
+            os.getenv('TWITTER_API_SECRET'),
+            os.getenv('TWITTER_ACCESS_TOKEN'),
+            os.getenv('TWITTER_ACCESS_SECRET'),
+            os.getenv('TWITTER_BEARER_TOKEN')
+        )
+        ig_publisher = InstagramPublisher(
+            os.getenv('FACEBOOK_ACCESS_TOKEN'),
+            os.getenv('INSTAGRAM_BUSINESS_ACCOUNT_ID')
+        )
+        
+        return jsonify({
+            "success": True,
+            "message": f"{len(updated)} token güncellendi",
+            "updated": updated
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Token güncelleme hatası: {str(e)}"
+        }), 500
+
+
 # Static files
 @app.route('/static/<path:filename>')
 def static_files(filename):
