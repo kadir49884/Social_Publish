@@ -160,6 +160,18 @@ def health_check():
     })
 
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """API sağlık kontrolü - GitHub Actions için"""
+    from datetime import datetime
+    return jsonify({
+        "status": "healthy",
+        "service": "SocialPublish API",
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+
+
 @app.route('/api/platforms', methods=['GET'])
 def get_platforms():
     """Desteklenen platformları listele"""
