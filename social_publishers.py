@@ -207,8 +207,23 @@ class InstagramPublisher(SocialMediaPublisher):
             container_response = requests.post(container_url, data=container_params)
             container_result = container_response.json()
             
+            # Rate limit tracking
+            x_app_usage = container_response.headers.get('X-App-Usage', 'N/A')
+            print(f"📊 Instagram API Usage: {x_app_usage}")
+            
             if container_response.status_code != 200 or 'id' not in container_result:
                 error_msg = container_result.get('error', {}).get('message', 'Unknown error')
+                error_code = container_result.get('error', {}).get('code', 'N/A')
+                
+                # Rate limit hatası için özel mesaj
+                if 'request limit' in error_msg.lower() or error_code == 4:
+                    return {
+                        "status": "error",
+                        "message": f"Instagram rate limit aşıldı. 1 saat bekleyin. (Error: {error_msg})",
+                        "platform": "instagram",
+                        "retry_after": 3600  # 1 saat (saniye cinsinden)
+                    }
+                
                 return {
                     "status": "error",
                     "message": f"Media container creation failed: {error_msg}",

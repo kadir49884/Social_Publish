@@ -437,6 +437,10 @@ def publish_json():
                 )
                 results['instagram'] = ig_result
                 print(f"📷 Instagram: {ig_result}")
+                
+                # Instagram rate limit hatası varsa diğer platformları da durdurma
+                if ig_result.get('status') == 'error' and 'rate limit' in ig_result.get('message', '').lower():
+                    print(f"⚠️ Instagram rate limit! Diğer platformlar devam ediyor...")
             
             # Temp dosyayı sil
             try:
