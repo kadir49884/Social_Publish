@@ -217,8 +217,11 @@ class InstagramPublisher(SocialMediaPublisher):
             
             container_id = container_result['id']
             
-            # Step 2: Wait for media to be ready (max 30 seconds)
-            max_attempts = 15
+            # Step 2: Wait for media to be ready (Instagram genelde 10-20 saniye işler)
+            # Optimize edilmiş: Daha az API call, daha uzun bekleme
+            time.sleep(15)  # İlk bekleme: Instagram genelde 10-15 saniyede hazır
+            
+            max_attempts = 3  # En fazla 3 kontrol (15s → 25s → 40s)
             for attempt in range(max_attempts):
                 status_url = f"https://graph.facebook.com/v21.0/{container_id}"
                 status_params = {
@@ -239,7 +242,9 @@ class InstagramPublisher(SocialMediaPublisher):
                         "platform": "instagram"
                     }
                 
-                time.sleep(2)  # Wait 2 seconds before next check
+                # Exponential backoff: 10s → 15s
+                wait_time = 10 if attempt == 0 else 15
+                time.sleep(wait_time)
             
             # Step 3: Publish the container
             publish_url = f"https://graph.facebook.com/v21.0/{self.instagram_account_id}/media_publish"
