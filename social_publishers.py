@@ -207,9 +207,11 @@ class InstagramPublisher(SocialMediaPublisher):
             container_response = requests.post(container_url, data=container_params)
             container_result = container_response.json()
             
-            # Rate limit tracking
-            x_app_usage = container_response.headers.get('X-App-Usage', 'N/A')
-            print(f"📊 Instagram API Usage: {x_app_usage}")
+            # Rate limit tracking - DETAYLI
+            print(f"📊 Instagram Container Response Status: {container_response.status_code}")
+            print(f"📊 X-App-Usage: {container_response.headers.get('X-App-Usage', 'N/A')}")
+            print(f"📊 X-Business-Use-Case-Usage: {container_response.headers.get('X-Business-Use-Case-Usage', 'N/A')}")
+            print(f"📊 X-FB-Trace-ID: {container_response.headers.get('X-FB-Trace-ID', 'N/A')}")
             
             if container_response.status_code != 200 or 'id' not in container_result:
                 error_msg = container_result.get('error', {}).get('message', 'Unknown error')
